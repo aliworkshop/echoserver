@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/aliworkshop/errorslib"
 	"github.com/labstack/echo/v4"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"sync"
@@ -206,6 +207,10 @@ func (r *request) GetQuery(key string) (string, bool) {
 		return query, true
 	}
 	return "", false
+}
+
+func (r *request) GetFile(key string) (*multipart.FileHeader, error) {
+	return r.context.FormFile(key)
 }
 
 func (r *request) Paging() handlerlib.Pagination {
