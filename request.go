@@ -22,9 +22,6 @@ type request struct {
 	connectionContext context.Context
 	isUpgraded        bool
 	auth              authorization.Model
-	session           authorization.SessionModel
-	importantAuth     authorization.Model
-	importantSession  authorization.SessionModel
 	body              interface{}
 	filters           map[string][]string
 	language          handlerlib.Language
@@ -242,12 +239,15 @@ func (r *request) IsResponded() bool {
 func (r *request) SetResponded(responded bool) {
 	r.responded = responded
 }
+
 func (r *request) SetDynamicFilters(fs []dfilterlib.Filter) {
 	r.dFilters = fs
 }
+
 func (r *request) GetDynamicFilters() []dfilterlib.Filter {
 	return r.dFilters
 }
+
 func (r *request) Filters() map[string][]string {
 	if r.filters != nil {
 		return r.filters
@@ -275,19 +275,8 @@ func (r *request) GetAuth() authorization.Model {
 	return r.auth
 }
 
-func (r *request) SetSession(session authorization.SessionModel) {
-	r.session = session
-}
-
-func (r *request) GetSession() authorization.SessionModel {
-	return r.session
-}
-
 func (r *request) GetCurrentAccountId() interface{} {
 	auth := r.GetAuth()
-	if auth == nil {
-		auth = r.GetImportantAuth()
-	}
 	if auth != nil {
 		return auth.GetCurrentAccountId()
 	}
@@ -315,20 +304,6 @@ func (r *request) HasScope(scopes ...string) bool {
 	return r.auth.HasScope(scopes...)
 }
 
-func (r *request) GetRoles() []string {
-	if r.auth == nil {
-		return nil
-	}
-	return r.auth.GetRoles()
-}
-
-func (r *request) HasRole(roles ...string) bool {
-	if r.auth == nil {
-		return false
-	}
-	return r.auth.HasRole(roles...)
-}
-
 func (r *request) SetTemp(key string, value interface{}) {
 	r.tempMtx.Lock()
 	r.temp[key] = value
@@ -344,57 +319,4 @@ func (r *request) GetTemp(key string) interface{} {
 
 func (r *request) GetStatusCode() int {
 	return r.context.Response().Status
-}
-
-// ImportantToken returns important authorization methods
-func (r *request) ImportantToken() (token string) {
-	if r.importantAuth == nil {
-		return
-	}
-	return r.importantAuth.Token()
-}
-
-func (r *request) IsImportantAuthenticated() bool {
-	if r.importantAuth == nil {
-		return false
-	}
-	return r.importantAuth.IsAuthenticated()
-}
-
-func (r *request) GetImportantScopes() []string {
-	if r.importantAuth == nil {
-		return nil
-	}
-	return r.importantAuth.GetScopes()
-}
-
-func (r *request) HasImportantScope(scopes ...string) bool {
-	if r.importantAuth == nil {
-		return false
-	}
-	return r.importantAuth.HasScope(scopes...)
-}
-
-func (r *request) SetImportantAuth(auth authorization.Model) {
-	r.importantAuth = auth
-}
-
-func (r *request) GetImportantAuth() authorization.Model {
-	return r.importantAuth
-}
-
-func (r *request) SetImportantSession(session authorization.SessionModel) {
-	r.importantSession = session
-}
-
-func (r *request) GetImportantSession() authorization.SessionModel {
-	return r.importantSession
-}
-
-func (r *request) GetImportantCurrentAccountId() interface{} {
-	auth := r.GetImportantAuth()
-	if auth != nil {
-		return auth.GetCurrentAccountId()
-	}
-	return nil
 }

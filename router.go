@@ -64,13 +64,7 @@ func (rh *router) getHandler(monitoring handlerlib.MonitoringModel, handler hand
 				return nil
 			}
 		}
-		session := req.GetSession()
-		if session != nil {
-			if err := rh.verifySession(c, session); err != nil {
-				isLastHandler = true
-				return echo.ErrForbidden
-			}
-		}
+
 		// respond only on last handler, and if is not responded yet
 		handlerlib.Handle(handler, req, shouldRespond)
 		return nil
@@ -104,13 +98,7 @@ func (rh *router) getMiddleware(monitoring handlerlib.MonitoringModel, handler h
 					return nil
 				}
 			}
-			session := req.GetSession()
-			if session != nil {
-				if err := rh.verifySession(c, session); err != nil {
-					isLastHandler = true
-					return echo.ErrForbidden
-				}
-			}
+
 			if handlerlib.Handle(handler, req, false) {
 				return next(c)
 			}
