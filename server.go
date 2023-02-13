@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/aliworkshop/configlib"
 	"github.com/aliworkshop/handlerlib"
-	loggercore "github.com/aliworkshop/loggerlib"
+	"github.com/aliworkshop/loggerlib"
 	"github.com/labstack/echo/v4"
 	ew "github.com/labstack/echo/v4/middleware"
 	"net/http"
@@ -46,13 +46,21 @@ func NewServer(configRegistry configlib.Registry) handlerlib.ServerModel {
 	if gs.config.Http.Development {
 		s.Use(ew.Logger())
 	} else {
-		l, err := loggercore.GetLogger(configRegistry.ValueOf("http.logger"))
+		l, err := loggerlib.GetLogger(configRegistry.ValueOf("http.logger"))
 		if err != nil {
 			panic("logger for http is not set. set http server config to development")
 		}
 		s.Use(NewLoggerHandler(l, gs.config.Http))
 	}
-	s.Use(Options)
+	s.Use(ew.CORSWithConfig(ew.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{
+			http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions,
+		},
+		AllowHeaders: []string{
+			echo.HeaderAuthorization, echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept,
+		},
+	}))
 	gs.server = s
 
 	return gs
@@ -88,15 +96,7 @@ func (gs *echoServer) Run(addr ...string) error {
 	if addr == nil || len(addr) == 0 {
 		addr = []string{"127.0.0.1:8080"}
 	}
-	return gs.server.Start(addr[0])
-	if len(addr) > 1 {
-		return fmt.Errorf("more than one addr is set for http server")
-	}
-	gs.httpServer = http.Server{
-		Addr:    addr[0],
-		Handler: gs.server,
-	}
-	err := gs.httpServer.ListenAndServe()
+	err := gs.server.Start(addr[0])
 	if err != nil {
 		if err == http.ErrServerClosed {
 			return nil
@@ -112,24 +112,8 @@ func (gs *echoServer) NewRouterGroup(path string) handlerlib.RouterGroupModel {
 	return rg
 }
 
-func Options(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		if c.Request().Method != "OPTIONS" {
-			c.Request().Header.Set("Access-Control-Allow-Origin", "*")
-		} else {
-			c.Request().Header.Set("Access-Control-Allow-Origin", "*")
-			c.Request().Header.Set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
-			c.Request().Header.Set("Access-Control-Allow-Headers", "authorization, origin, content-type, accept")
-			c.Request().Header.Set("Allow", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
-			c.Request().Header.Set("Content-Type", "application/json")
-			c.JSON(http.StatusOK, nil)
-		}
-		return next(c)
-	}
-}
-
 func (gs *echoServer) Shutdown(timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	return gs.httpServer.Shutdown(ctx)
+	return gs.server.Shutdown(ctx)
 }
