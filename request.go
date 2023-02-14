@@ -133,23 +133,6 @@ func (r *request) HandleRequestBody(body interface{}) errorslib.ErrorModel {
 	return nil
 }
 
-func (r *request) HandleRequestJsonBody(body interface{}) errorslib.ErrorModel {
-	err := r.context.Bind(body)
-	if err != nil {
-		return errorslib.Validation(err)
-	}
-	r.body = body
-	return nil
-}
-
-func (r *request) HandleRequestParams(params interface{}) (err error) {
-	err = r.context.Bind(params)
-	if err != nil {
-		return
-	}
-	return nil
-}
-
 func (r *request) GetLanguage() handlerlib.Language {
 	return r.language
 }
@@ -195,18 +178,12 @@ func (r *request) SetModel(i interface{}) {
 	r.body = i
 }
 
-func (r *request) GetParam(key string) (interface{}, bool) {
-	if param := r.context.Param(key); param != "" {
-		return param, true
-	}
-	return "", false
+func (r *request) GetParam(key string) string {
+	return r.context.Param(key)
 }
 
-func (r *request) GetQuery(key string) (string, bool) {
-	if query := r.context.QueryParam(key); query != "" {
-		return query, true
-	}
-	return "", false
+func (r *request) GetQuery(key string) string {
+	return r.context.QueryParam(key)
 }
 
 func (r *request) GetFile(key string) (*multipart.FileHeader, error) {
