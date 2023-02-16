@@ -16,6 +16,9 @@ func NewLoggerHandler(l logger.Logger, serverConfig Http) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			start := time.Now()
+			if err := next(c); err != nil {
+				c.Error(err)
+			}
 			_, ok := skipPaths[c.Path()]
 			if !ok || c.Path() == "" {
 				path := c.Request().URL.Path
@@ -57,7 +60,7 @@ func NewLoggerHandler(l logger.Logger, serverConfig Http) echo.MiddlewareFunc {
 					l.With(meta).CriticalF("")
 				}
 			}
-			return next(c)
+			return nil
 		}
 	}
 }
