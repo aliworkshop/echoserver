@@ -130,6 +130,9 @@ func (r *request) HandleRequestBody(body interface{}) errorslib.ErrorModel {
 		return errorslib.Validation(err)
 	}
 	r.body = body
+	if err = r.context.Validate(r.body); err != nil {
+		return errorslib.Validation(err).WithMessage(err.Error())
+	}
 	return nil
 }
 

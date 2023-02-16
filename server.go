@@ -9,6 +9,7 @@ import (
 	"github.com/aliworkshop/handlerlib/middleware"
 	"github.com/aliworkshop/loggerlib"
 	"github.com/aliworkshop/loggerlib/logger"
+	"github.com/go-playground/validator/v10"
 	echop "github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	ew "github.com/labstack/echo/v4/middleware"
@@ -62,6 +63,7 @@ func NewServer(configRegistry configlib.Registry) handlerlib.ServerModel {
 			echo.HeaderAuthorization, echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept,
 		},
 	}))
+	s.Validator = &customValidator{validator: validator.New()}
 	gs.server = s
 
 	return gs
