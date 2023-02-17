@@ -20,7 +20,7 @@ func NewHandler(logger logger.Logger) handlerlib.Handler {
 }
 
 func (h *echoHandler) Upgrade(model handlerlib.RequestModel) (handlerlib.WebSocketModel, error) {
-	return upgrade(*model.GetContext().(*echo.Context))
+	return upgrade(model.GetContext().(echo.Context))
 }
 func (h *echoHandler) SetHandlerFunc(handler handlerlib.HandlerFunc) {
 	h.handlerFunction = handler

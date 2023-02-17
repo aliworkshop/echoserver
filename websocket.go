@@ -21,17 +21,21 @@ func (gws *echoWebSocket) Write(mType int, msg []byte) error {
 	return gws.conn.WriteMessage(mType, msg)
 }
 
+func (gws *echoWebSocket) WriteJson(msg interface{}) error {
+	return gws.conn.WriteJSON(msg)
+}
+
 func (gws *echoWebSocket) Close() {
 	err := gws.conn.Close()
 	if err != nil {
 		fmt.Println("in close handler", err)
 	}
 }
-func (gws *echoWebSocket) SetReadDeadLine(deadline int) {
-	gws.conn.SetReadDeadline(time.Now().Add(time.Second * time.Duration(int64(deadline))))
+func (gws *echoWebSocket) SetReadDeadLine(deadline time.Duration) {
+	gws.conn.SetReadDeadline(time.Now().Add(deadline))
 }
-func (gws *echoWebSocket) SetWriteDeadLine(deadline int) {
-	gws.conn.SetWriteDeadline(time.Now().Add(time.Second * time.Duration(int64(deadline))))
+func (gws *echoWebSocket) SetWriteDeadLine(deadline time.Duration) {
+	gws.conn.SetWriteDeadline(time.Now().Add(deadline))
 }
 func (gws *echoWebSocket) WriteControl(mType int, msg []byte, deadline time.Time) error {
 	return gws.conn.WriteControl(mType, msg, deadline)

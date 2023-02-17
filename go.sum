@@ -53,6 +53,8 @@ github.com/aliworkshop/errorslib v1.0.0 h1:USO/UZFL8x8tmCCxQ8xjWICG7n5gRBxNOEpfv
 github.com/aliworkshop/errorslib v1.0.0/go.mod h1:jYW96Mz3yKbkk9NU7UE9EALknkiGeam0QSKZY582Y+c=
 github.com/aliworkshop/handlerlib v1.1.0 h1:Ev64wyPPMY3w+lTSTh0BuyiJ+vgUXyXrRbU+ZsLvbhs=
 github.com/aliworkshop/handlerlib v1.1.0/go.mod h1:jrVSWA6b0BPiz95hfLON/zwoQJIKTwhrEF5EiAC+Ass=
+github.com/aliworkshop/handlerlib v1.1.1 h1:E3y4SDz/3XW9AIl0v60GlI2xpygMFRva/25aB3jcKz4=
+github.com/aliworkshop/handlerlib v1.1.1/go.mod h1:jrVSWA6b0BPiz95hfLON/zwoQJIKTwhrEF5EiAC+Ass=
 github.com/aliworkshop/loggerlib v1.0.2 h1:4srnAhBm/V6ESxBzxu8HudHQRUX666n1mV3hvYFANCA=
 github.com/aliworkshop/loggerlib v1.0.2/go.mod h1:qy8ED4ZmDjltpaXANxS2GWYS2bvUqYgjAPNB9opaRys=
 github.com/aliworkshop/loggerlib v1.1.0 h1:M2SGoVcIek8Clpz4UrdEbD8bfGRSB49HDVIHfSXyjeM=
