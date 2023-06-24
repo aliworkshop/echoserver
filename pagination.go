@@ -8,17 +8,24 @@ type paginator struct {
 	sortBy  string
 }
 
-func (p *paginator) PerPage() int {
-	return p.perPage
-}
-
 func NewPaginator() handlerlib.Pagination {
 	return &paginator{}
 }
 
 func (p *paginator) Page() int {
+	if p.page == 0 {
+		p.page = 1
+	}
 	return p.page
 }
+
+func (p *paginator) PerPage() int {
+	if p.perPage == 0 {
+		p.perPage = 10
+	}
+	return p.perPage
+}
+
 func (p *paginator) SetPage(i int) {
 	p.page = i
 }

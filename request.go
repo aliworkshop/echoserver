@@ -209,11 +209,11 @@ func (r *request) Paging() handlerlib.Pagination {
 	return p
 }
 
-func (r request) BaseRequest() *http.Request {
+func (r *request) BaseRequest() *http.Request {
 	return r.context.Request()
 }
 
-func (r request) BaseWriter() http.ResponseWriter {
+func (r *request) BaseWriter() http.ResponseWriter {
 	return r.context.Response()
 }
 

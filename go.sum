@@ -55,6 +55,8 @@ github.com/aliworkshop/handlerlib v1.1.0 h1:Ev64wyPPMY3w+lTSTh0BuyiJ+vgUXyXrRbU+
 github.com/aliworkshop/handlerlib v1.1.0/go.mod h1:jrVSWA6b0BPiz95hfLON/zwoQJIKTwhrEF5EiAC+Ass=
 github.com/aliworkshop/handlerlib v1.1.1 h1:E3y4SDz/3XW9AIl0v60GlI2xpygMFRva/25aB3jcKz4=
 github.com/aliworkshop/handlerlib v1.1.1/go.mod h1:jrVSWA6b0BPiz95hfLON/zwoQJIKTwhrEF5EiAC+Ass=
+github.com/aliworkshop/handlerlib v1.2.0 h1:g4A3EQxdjqxFf0GbmoS4e2AWzHbj+6mYHPvWyE+Ax6Q=
+github.com/aliworkshop/handlerlib v1.2.0/go.mod h1:jrVSWA6b0BPiz95hfLON/zwoQJIKTwhrEF5EiAC+Ass=
 github.com/aliworkshop/loggerlib v1.0.2 h1:4srnAhBm/V6ESxBzxu8HudHQRUX666n1mV3hvYFANCA=
 github.com/aliworkshop/loggerlib v1.0.2/go.mod h1:qy8ED4ZmDjltpaXANxS2GWYS2bvUqYgjAPNB9opaRys=
 github.com/aliworkshop/loggerlib v1.1.0 h1:M2SGoVcIek8Clpz4UrdEbD8bfGRSB49HDVIHfSXyjeM=

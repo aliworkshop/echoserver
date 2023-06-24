@@ -13,6 +13,7 @@ func NewResponder(languageBundle *i18n.Bundle) handlerlib.Responder {
 		languageBundle: languageBundle,
 	}
 }
+
 func NewEmptyResponder(languageBundle *i18n.Bundle) handlerlib.Responder {
 	return &emptyResponder{
 		languageBundle: languageBundle,
@@ -21,21 +22,27 @@ func NewEmptyResponder(languageBundle *i18n.Bundle) handlerlib.Responder {
 
 type echoResponder struct {
 	languageBundle *i18n.Bundle
+	total          uint
 }
-
 type emptyResponder struct {
 	languageBundle *i18n.Bundle
+	total          uint
 }
 
-func (gr *echoResponder) LanguageBundle() *i18n.Bundle {
-	return gr.languageBundle
+func (er *echoResponder) LanguageBundle() *i18n.Bundle {
+	return er.languageBundle
 }
 
-func (gr *echoResponder) SetLanguageBundle(bundle *i18n.Bundle) {
-	gr.languageBundle = bundle
+func (er *echoResponder) SetLanguageBundle(bundle *i18n.Bundle) {
+	er.languageBundle = bundle
 }
 
-func (gr *echoResponder) Respond(req handlerlib.RequestModel, status handlerlib.Status, result interface{}) {
+func (er *echoResponder) SetTotal(total uint) handlerlib.Responder {
+	er.total = total
+	return er
+}
+
+func (er *echoResponder) Respond(req handlerlib.RequestModel, status handlerlib.Status, result interface{}) {
 	if f, ok := result.(handlerlib.ResponseFinalizer); ok {
 		f.Finalize()
 	}
@@ -75,13 +82,19 @@ func (gr *echoResponder) Respond(req handlerlib.RequestModel, status handlerlib.
 		}
 		break
 	}
-	ctx.JSON(getStatusCode(status), result)
+	response := handlerlib.Response{
+		Page:    req.Paging().Page(),
+		PerPage: req.Paging().PerPage(),
+		Items:   result,
+		Total:   er.total,
+	}
+	ctx.JSON(getStatusCode(status), response)
 }
 
-func (gr *echoResponder) RespondWithError(req handlerlib.RequestModel, err errorslib.ErrorModel) {
+func (er *echoResponder) RespondWithError(req handlerlib.RequestModel, err errorslib.ErrorModel) {
 	ctx := req.GetContext().(echo.Context)
 	ctx.Request().Header.Set("X-Request-UID", req.GetUid())
-	if gr.languageBundle != nil {
+	if er.languageBundle != nil {
 		errId := err.Id()
 		if errId != "" && (err.IsMsgDefault() || !err.IsIdDefault()) {
 			err = err.Clone().WithMessage(req.ShouldLocalize(&i18n.LocalizeConfig{
@@ -99,22 +112,27 @@ func (gr *echoResponder) RespondWithError(req handlerlib.RequestModel, err error
 	req.SetResponded(true)
 }
 
-func (gr *emptyResponder) LanguageBundle() *i18n.Bundle {
-	return gr.languageBundle
+func (er *emptyResponder) LanguageBundle() *i18n.Bundle {
+	return er.languageBundle
 }
 
-func (gr *emptyResponder) SetLanguageBundle(bundle *i18n.Bundle) {
-	gr.languageBundle = bundle
+func (er *emptyResponder) SetLanguageBundle(bundle *i18n.Bundle) {
+	er.languageBundle = bundle
 }
 
-func (gr *emptyResponder) Respond(req handlerlib.RequestModel, status handlerlib.Status, result interface{}) {
+func (er *emptyResponder) SetTotal(total uint) handlerlib.Responder {
+	er.total = total
+	return er
+}
+
+func (er *emptyResponder) Respond(req handlerlib.RequestModel, status handlerlib.Status, result interface{}) {
 	ctx := req.GetContext().(echo.Context)
 	ctx.Request().Header.Set("X-Request-UID", req.GetUid())
 	ctx.JSON(getStatusCode(status), result)
 	req.SetResponded(true)
 }
 
-func (gr *emptyResponder) RespondWithError(req handlerlib.RequestModel, err errorslib.ErrorModel) {
+func (er *emptyResponder) RespondWithError(req handlerlib.RequestModel, err errorslib.ErrorModel) {
 	ctx := req.GetContext().(echo.Context)
 	ctx.Request().Header.Set("X-Request-UID", req.GetUid())
 	ctx.Error(err)
