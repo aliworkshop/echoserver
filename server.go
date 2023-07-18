@@ -44,7 +44,9 @@ func NewServer(configRegistry configlib.Registry) handlerlib.ServerModel {
 		monitoring:     handlerlib.DefaultMonitoring,
 	}
 	s := echo.New()
-	s.Use(ew.Recover())
+	if !cfg.Development {
+		s.Use(ew.Recover())
+	}
 	if gs.config.Http.Development {
 		s.Use(ew.Logger())
 	} else {
