@@ -1,19 +1,19 @@
 package echoserver
 
 import (
-	"github.com/aliworkshop/handlerlib"
+	"github.com/aliworkshop/gateway"
 	"net/http"
 )
 
-var statusMap = map[handlerlib.Status]int{
-	handlerlib.StatusOK:        http.StatusOK,
-	handlerlib.StatusCreated:   http.StatusCreated,
-	handlerlib.StatusBadInput:  http.StatusBadRequest,
-	handlerlib.StatusNoContent: http.StatusNoContent,
-	handlerlib.StatusConflict:  http.StatusConflict,
+var statusMap = map[gateway.Status]int{
+	gateway.StatusOK:        http.StatusOK,
+	gateway.StatusCreated:   http.StatusCreated,
+	gateway.StatusBadInput:  http.StatusBadRequest,
+	gateway.StatusNoContent: http.StatusNoContent,
+	gateway.StatusConflict:  http.StatusConflict,
 }
 
-func getStatusCode(status handlerlib.Status) int {
+func getStatusCode(status gateway.Status) int {
 	if code, ok := statusMap[status]; ok {
 		return code
 	}

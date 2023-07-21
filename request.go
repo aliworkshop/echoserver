@@ -3,6 +3,7 @@ package echoserver
 import (
 	"context"
 	"github.com/aliworkshop/errorslib"
+	"github.com/aliworkshop/gateway"
 	"github.com/labstack/echo/v4"
 	"mime/multipart"
 	"net/http"
@@ -10,8 +11,7 @@ import (
 	"sync"
 
 	"github.com/aliworkshop/dfilterlib"
-	"github.com/aliworkshop/handlerlib"
-	"github.com/aliworkshop/handlerlib/authorization"
+	"github.com/aliworkshop/gateway/authorization"
 	"github.com/aliworkshop/loggerlib/logger"
 	"github.com/google/uuid"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -22,10 +22,10 @@ type request struct {
 	context           echo.Context
 	connectionContext context.Context
 	isUpgraded        bool
-	auth              authorization.Model
+	auth              authorization.Authorizer
 	body              interface{}
 	filters           map[string][]string
-	language          handlerlib.Language
+	language          gateway.Language
 	log               logger.Logger
 	responded         bool
 	*paginator
@@ -35,7 +35,7 @@ type request struct {
 	tempMtx *sync.Mutex
 }
 
-func NewRequest(ctx echo.Context, languageBundle *i18n.Bundle) handlerlib.RequestModel {
+func NewRequest(ctx echo.Context, languageBundle *i18n.Bundle) gateway.Requester {
 	req := &request{
 		temp:    make(map[string]interface{}),
 		tempMtx: new(sync.Mutex),
@@ -43,7 +43,7 @@ func NewRequest(ctx echo.Context, languageBundle *i18n.Bundle) handlerlib.Reques
 	req.SetContext(ctx)
 	if languageBundle != nil {
 		acceptLanguage := ctx.Request().Header.Get("Accept-Language")
-		req.language = handlerlib.Language{
+		req.language = gateway.Language{
 			AcceptLanguage: acceptLanguage,
 			Localizer:      i18n.NewLocalizer(languageBundle, acceptLanguage, "EN"),
 		}
@@ -79,7 +79,7 @@ func (r *request) Logger() logger.Logger {
 	return r.log
 }
 
-func (r *request) WithLogger(l logger.Logger) handlerlib.RequestModel {
+func (r *request) WithLogger(l logger.Logger) gateway.Requester {
 	r.log = l.With(logger.Field{"UID": r.uid})
 	return r
 }
@@ -124,7 +124,7 @@ func (r *request) GetBody() interface{} {
 	return r.body
 }
 
-func (r *request) HandleRequestBody(body interface{}) errorslib.ErrorModel {
+func (r *request) BindRequest(body interface{}) errorslib.ErrorModel {
 	err := r.context.Bind(body)
 	if err != nil {
 		return errorslib.Validation(err)
@@ -136,7 +136,7 @@ func (r *request) HandleRequestBody(body interface{}) errorslib.ErrorModel {
 	return nil
 }
 
-func (r *request) GetLanguage() handlerlib.Language {
+func (r *request) GetLanguage() gateway.Language {
 	return r.language
 }
 
@@ -193,7 +193,7 @@ func (r *request) GetFile(key string) (*multipart.FileHeader, error) {
 	return r.context.FormFile(key)
 }
 
-func (r *request) Paging() handlerlib.Pagination {
+func (r *request) Pager() gateway.Paginator {
 	if r.paginator != nil {
 		return r.paginator
 	}
@@ -201,19 +201,19 @@ func (r *request) Paging() handlerlib.Pagination {
 	page := r.context.QueryParam("$page")
 	p.page, _ = strconv.Atoi(page)
 
-	pp := r.context.QueryParam("$perpage")
-	p.perPage, _ = strconv.Atoi(pp)
+	limit := r.context.QueryParam("$limit")
+	p.limit, _ = strconv.Atoi(limit)
 
 	p.sortBy = r.context.QueryParam("$sortby")
 	r.paginator = p
 	return p
 }
 
-func (r *request) BaseRequest() *http.Request {
+func (r *request) Request() *http.Request {
 	return r.context.Request()
 }
 
-func (r *request) BaseWriter() http.ResponseWriter {
+func (r *request) Writer() http.ResponseWriter {
 	return r.context.Response()
 }
 
@@ -252,11 +252,11 @@ func (r *request) Token() (token string) {
 	return r.auth.Token()
 }
 
-func (r *request) SetAuth(auth authorization.Model) {
+func (r *request) SetAuth(auth authorization.Authorizer) {
 	r.auth = auth
 }
 
-func (r *request) GetAuth() authorization.Model {
+func (r *request) GetAuth() authorization.Authorizer {
 	return r.auth
 }
 

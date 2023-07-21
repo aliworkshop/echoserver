@@ -3,11 +3,13 @@ package echoserver
 import (
 	"fmt"
 	"github.com/aliworkshop/configlib"
-	"github.com/aliworkshop/handlerlib"
-	"github.com/aliworkshop/handlerlib/middleware"
+	"github.com/aliworkshop/gateway"
+	"github.com/aliworkshop/gateway/middleware"
 	"github.com/aliworkshop/loggerlib/logger"
 	"github.com/labstack/echo/v4"
+	ew "github.com/labstack/echo/v4/middleware"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"path/filepath"
 )
 
 type routerGroup struct {
@@ -17,7 +19,7 @@ type routerGroup struct {
 
 	mConfig middlewareConfig
 
-	monitoring handlerlib.MonitoringModel
+	monitoring gateway.MonitoringModel
 }
 
 func newRouterGroup(e *echo.Echo, config config, path string) *routerGroup {
@@ -27,33 +29,37 @@ func newRouterGroup(e *echo.Echo, config config, path string) *routerGroup {
 		},
 		engine:      e,
 		routerGroup: e.Group(path),
-		monitoring:  handlerlib.DefaultMonitoring,
+		monitoring:  gateway.DefaultMonitoring,
 	}
 	return r
 }
 
-func (r *routerGroup) SetMonitoringHandler(monitoring handlerlib.MonitoringModel) {
+func (r *routerGroup) SetMonitoringHandler(monitoring gateway.MonitoringModel) {
 	r.monitoring = monitoring
 }
 
-func (r *routerGroup) READ(path string, handlers ...handlerlib.HandlerModel) {
+func (r *routerGroup) READ(path string, handlers ...gateway.HandlerEngine) {
 	hf, mfs := r.match(r.monitoring, handlers...)
 	r.routerGroup.GET(path, hf, mfs...)
 }
-func (r *routerGroup) CREATE(path string, handlers ...handlerlib.HandlerModel) {
+func (r *routerGroup) CREATE(path string, handlers ...gateway.HandlerEngine) {
 	hf, mfs := r.match(r.monitoring, handlers...)
 	r.routerGroup.POST(path, hf, mfs...)
 }
-func (r *routerGroup) UPDATE(path string, handlers ...handlerlib.HandlerModel) {
+func (r *routerGroup) UPDATE(path string, handlers ...gateway.HandlerEngine) {
 	hf, mfs := r.match(r.monitoring, handlers...)
 	r.routerGroup.PUT(path, hf, mfs...)
 }
-func (r *routerGroup) DELETE(path string, handlers ...handlerlib.HandlerModel) {
+func (r *routerGroup) DELETE(path string, handlers ...gateway.HandlerEngine) {
 	hf, mfs := r.match(r.monitoring, handlers...)
 	r.routerGroup.DELETE(path, hf, mfs...)
 }
 
-func (r *routerGroup) Group(relativePath string) handlerlib.RouterGroupModel {
+func (r *routerGroup) STATIC(path string) {
+	r.routerGroup.Use(ew.Static(filepath.Join(path)))
+}
+
+func (r *routerGroup) Group(relativePath string) gateway.RouterGroupModel {
 	group := &routerGroup{
 		router: router{
 			config: r.config,
@@ -71,7 +77,7 @@ func (r *routerGroup) SetupMiddlewares(registry configlib.Registry,
 		panic(err)
 	}
 	for key, h := range r.mConfig.Middlewares {
-		handler := NewHandlerModel(logger, languageBundle)
+		handler := NewHandlerEngine(logger, languageBundle)
 		m := middleware.Get(handler,
 			registry.
 				ValueOf("middlewares").
@@ -84,7 +90,7 @@ func (r *routerGroup) SetupMiddlewares(registry configlib.Registry,
 	}
 }
 
-func (r *routerGroup) Middleware(handlers ...handlerlib.HandlerModel) {
+func (r *routerGroup) Middleware(handlers ...gateway.HandlerEngine) {
 	_, mfs := r.match(r.monitoring, handlers...)
 	r.routerGroup.Use(mfs...)
 }

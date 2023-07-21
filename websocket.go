@@ -2,7 +2,7 @@ package echoserver
 
 import (
 	"fmt"
-	"github.com/aliworkshop/handlerlib"
+	"github.com/aliworkshop/gateway"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -49,7 +49,7 @@ func (gws *echoWebSocket) SetCloseHandler(f func(code int, text string) error) e
 	return nil
 }
 
-func upgrade(c echo.Context) (handlerlib.WebSocketModel, error) {
+func upgrade(c echo.Context) (gateway.WebSocketHandler, error) {
 	gs := new(echoWebSocket)
 	upper := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	conn, err := upper.Upgrade(c.Response(), c.Request(), nil)

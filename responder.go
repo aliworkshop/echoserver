@@ -2,19 +2,19 @@ package echoserver
 
 import (
 	"github.com/aliworkshop/errorslib"
-	"github.com/aliworkshop/handlerlib"
+	"github.com/aliworkshop/gateway"
 	"github.com/labstack/echo/v4"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"net/http"
 )
 
-func NewResponder(languageBundle *i18n.Bundle) handlerlib.Responder {
+func NewResponder(languageBundle *i18n.Bundle) gateway.Responder {
 	return &echoResponder{
 		languageBundle: languageBundle,
 	}
 }
 
-func NewEmptyResponder(languageBundle *i18n.Bundle) handlerlib.Responder {
+func NewEmptyResponder(languageBundle *i18n.Bundle) gateway.Responder {
 	return &emptyResponder{
 		languageBundle: languageBundle,
 	}
@@ -37,29 +37,29 @@ func (er *echoResponder) SetLanguageBundle(bundle *i18n.Bundle) {
 	er.languageBundle = bundle
 }
 
-func (er *echoResponder) SetTotal(total uint) handlerlib.Responder {
+func (er *echoResponder) SetTotal(total uint) gateway.Responder {
 	er.total = total
 	return er
 }
 
-func (er *echoResponder) Respond(req handlerlib.RequestModel, status handlerlib.Status, result interface{}) {
-	if f, ok := result.(handlerlib.ResponseFinalizer); ok {
+func (er *echoResponder) Respond(req gateway.Requester, status gateway.Status, result interface{}) {
+	if f, ok := result.(gateway.ResponseFinalizer); ok {
 		f.Finalize()
 	}
 	ctx := req.GetContext().(echo.Context)
 	req.SetResponded(true)
 	ctx.Request().Header.Set("X-Request-UID", req.GetUid())
 	switch status {
-	case handlerlib.StatusMovedPermanently:
+	case gateway.StatusMovedPermanently:
 		ctx.Redirect(http.StatusMovedPermanently, result.(string))
 		return
-	case handlerlib.StatusFound:
+	case gateway.StatusFound:
 		ctx.Redirect(http.StatusFound, result.(string))
 		return
-	case handlerlib.StatusPermanentRedirect:
+	case gateway.StatusPermanentRedirect:
 		ctx.Redirect(http.StatusPermanentRedirect, result.(string))
 		return
-	case handlerlib.StatusTemporaryRedirect:
+	case gateway.StatusTemporaryRedirect:
 		ctx.Redirect(http.StatusTemporaryRedirect, result.(string))
 		return
 	case "":
@@ -67,31 +67,31 @@ func (er *echoResponder) Respond(req handlerlib.RequestModel, status handlerlib.
 		switch ctx.Request().Method {
 		case "POST", "PUT":
 			if result == nil {
-				status = handlerlib.StatusNoContent
+				status = gateway.StatusNoContent
 				break
 			}
-			status = handlerlib.StatusCreated
+			status = gateway.StatusCreated
 		case "GET":
-			status = handlerlib.StatusOK
+			status = gateway.StatusOK
 		case "DELETE":
 			if result == nil {
-				status = handlerlib.StatusNoContent
+				status = gateway.StatusNoContent
 				break
 			}
-			status = handlerlib.StatusOK
+			status = gateway.StatusOK
 		}
 		break
 	}
-	response := handlerlib.Response{
-		Page:    req.Paging().Page(),
-		PerPage: req.Paging().PerPage(),
+	response := gateway.Response{
+		Page:    req.Pager().Page(),
+		PerPage: req.Pager().PerPage(),
 		Items:   result,
 		Total:   er.total,
 	}
 	ctx.JSON(getStatusCode(status), response)
 }
 
-func (er *echoResponder) RespondWithError(req handlerlib.RequestModel, err errorslib.ErrorModel) {
+func (er *echoResponder) RespondError(req gateway.Requester, err errorslib.ErrorModel) {
 	ctx := req.GetContext().(echo.Context)
 	ctx.Request().Header.Set("X-Request-UID", req.GetUid())
 	if er.languageBundle != nil {
@@ -120,19 +120,19 @@ func (er *emptyResponder) SetLanguageBundle(bundle *i18n.Bundle) {
 	er.languageBundle = bundle
 }
 
-func (er *emptyResponder) SetTotal(total uint) handlerlib.Responder {
+func (er *emptyResponder) SetTotal(total uint) gateway.Responder {
 	er.total = total
 	return er
 }
 
-func (er *emptyResponder) Respond(req handlerlib.RequestModel, status handlerlib.Status, result interface{}) {
+func (er *emptyResponder) Respond(req gateway.Requester, status gateway.Status, result interface{}) {
 	ctx := req.GetContext().(echo.Context)
 	ctx.Request().Header.Set("X-Request-UID", req.GetUid())
 	ctx.JSON(getStatusCode(status), result)
 	req.SetResponded(true)
 }
 
-func (er *emptyResponder) RespondWithError(req handlerlib.RequestModel, err errorslib.ErrorModel) {
+func (er *emptyResponder) RespondError(req gateway.Requester, err errorslib.ErrorModel) {
 	ctx := req.GetContext().(echo.Context)
 	ctx.Request().Header.Set("X-Request-UID", req.GetUid())
 	ctx.Error(err)

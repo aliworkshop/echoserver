@@ -1,7 +1,7 @@
 package echoserver
 
 import (
-	"github.com/aliworkshop/handlerlib"
+	"github.com/aliworkshop/gateway"
 	"github.com/aliworkshop/loggerlib/logger"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -43,7 +43,7 @@ func NewLoggerHandler(l logger.Logger, serverConfig Http) echo.MiddlewareFunc {
 					"Mode":       c.Request().Header.Values("X-Mode"),
 				}
 				if req := c.Get("req"); req != nil {
-					request := req.(handlerlib.RequestModel)
+					request := req.(gateway.Requester)
 					if userId := request.GetCurrentAccountId(); userId != nil {
 						meta["UserId"] = userId
 					}

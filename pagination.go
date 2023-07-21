@@ -1,14 +1,14 @@
 package echoserver
 
-import "github.com/aliworkshop/handlerlib"
+import "github.com/aliworkshop/gateway"
 
 type paginator struct {
-	perPage int
-	page    int
-	sortBy  string
+	limit  int
+	page   int
+	sortBy string
 }
 
-func NewPaginator() handlerlib.Pagination {
+func NewPaginator() gateway.Paginator {
 	return &paginator{}
 }
 
@@ -20,17 +20,17 @@ func (p *paginator) Page() int {
 }
 
 func (p *paginator) PerPage() int {
-	if p.perPage == 0 {
-		p.perPage = 10
+	if p.limit == 0 {
+		p.limit = 10
 	}
-	return p.perPage
+	return p.limit
 }
 
 func (p *paginator) SetPage(i int) {
 	p.page = i
 }
 func (p *paginator) SetPerPage(i int) {
-	p.perPage = i
+	p.limit = i
 }
 
 func (p *paginator) SortBy() string {

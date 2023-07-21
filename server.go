@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/aliworkshop/configlib"
 	"github.com/aliworkshop/errorslib"
-	"github.com/aliworkshop/handlerlib"
-	"github.com/aliworkshop/handlerlib/middleware"
+	"github.com/aliworkshop/gateway"
+	"github.com/aliworkshop/gateway/middleware"
 	"github.com/aliworkshop/loggerlib"
 	"github.com/aliworkshop/loggerlib/logger"
 	"github.com/go-playground/validator/v10"
@@ -16,6 +16,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
+	"path/filepath"
 	"time"
 )
 
@@ -26,10 +27,10 @@ type echoServer struct {
 	config         config
 	configRegistry configlib.Registry
 
-	monitoring handlerlib.MonitoringModel
+	monitoring gateway.MonitoringModel
 }
 
-func NewServer(configRegistry configlib.Registry) handlerlib.ServerModel {
+func NewServer(configRegistry configlib.Registry) gateway.ServerModel {
 	var cfg config
 	if err := configRegistry.Unmarshal(&cfg); err != nil {
 		panic(err)
@@ -41,12 +42,16 @@ func NewServer(configRegistry configlib.Registry) handlerlib.ServerModel {
 		},
 		config:         cfg,
 		configRegistry: configRegistry,
-		monitoring:     handlerlib.DefaultMonitoring,
+		monitoring:     gateway.DefaultMonitoring,
 	}
 	s := echo.New()
 	if !cfg.Development {
 		s.Use(ew.Recover())
 	}
+
+	group := s.Group("assets")
+	group.Use(ew.Static(filepath.Join("uploads")))
+
 	if gs.config.Http.Development {
 		s.Use(ew.Logger())
 	} else {
@@ -71,11 +76,11 @@ func NewServer(configRegistry configlib.Registry) handlerlib.ServerModel {
 	return gs
 }
 
-func (gs *echoServer) SetMonitoringHandler(monitoring handlerlib.MonitoringModel) {
+func (gs *echoServer) SetMonitoringHandler(monitoring gateway.MonitoringModel) {
 	gs.monitoring = monitoring
 }
 
-func (gs *echoServer) AddMonitoring(m *handlerlib.Monitoring) (prometheus.Collector, errorslib.ErrorModel) {
+func (gs *echoServer) AddMonitoring(m *gateway.Monitoring) (prometheus.Collector, errorslib.ErrorModel) {
 	metric := echop.NewMetric(&echop.Metric{
 		ID:          m.ID,
 		Name:        m.Name,
@@ -97,9 +102,9 @@ func (gs *echoServer) StartMonitoring() {
 }
 
 func (gs *echoServer) SetupMiddlewares(logger logger.Logger, languageBundle *i18n.Bundle) {
-	middlewares := make([]handlerlib.HandlerModel, 0)
+	middlewares := make([]gateway.HandlerEngine, 0)
 	for key, h := range gs.config.Middlewares {
-		handler := NewHandlerModel(logger, languageBundle)
+		handler := NewHandlerEngine(logger, languageBundle)
 		m := middleware.Get(handler,
 			gs.configRegistry.
 				ValueOf("middlewares").
@@ -113,7 +118,7 @@ func (gs *echoServer) SetupMiddlewares(logger logger.Logger, languageBundle *i18
 	gs.Middleware(middlewares...)
 }
 
-func (gs *echoServer) Middleware(handlers ...handlerlib.HandlerModel) {
+func (gs *echoServer) Middleware(handlers ...gateway.HandlerEngine) {
 	_, mfs := gs.match(gs.monitoring, handlers...)
 	gs.server.Use(mfs...)
 }
@@ -132,7 +137,7 @@ func (gs *echoServer) Run(addr ...string) error {
 	return nil
 }
 
-func (gs *echoServer) NewRouterGroup(path string) handlerlib.RouterGroupModel {
+func (gs *echoServer) NewRouterGroup(path string) gateway.RouterGroupModel {
 	rg := newRouterGroup(gs.server, gs.config, path)
 	rg.monitoring = gs.monitoring
 	return rg
