@@ -2,7 +2,7 @@ package echoserver
 
 import (
 	"github.com/aliworkshop/errorslib"
-	"github.com/aliworkshop/gateway"
+	"github.com/aliworkshop/gateway/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"net/http"
@@ -43,9 +43,6 @@ func (er *echoResponder) SetTotal(total uint) gateway.Responder {
 }
 
 func (er *echoResponder) Respond(req gateway.Requester, status gateway.Status, result interface{}) {
-	if f, ok := result.(gateway.ResponseFinalizer); ok {
-		f.Finalize()
-	}
 	ctx := req.GetContext().(echo.Context)
 	req.SetResponded(true)
 	ctx.Request().Header.Set("X-Request-UID", req.GetUid())
@@ -62,7 +59,7 @@ func (er *echoResponder) Respond(req gateway.Requester, status gateway.Status, r
 	case gateway.StatusTemporaryRedirect:
 		ctx.Redirect(http.StatusTemporaryRedirect, result.(string))
 		return
-	case "":
+	case gateway.StatusUnknown:
 		ctx = req.GetContext().(echo.Context)
 		switch ctx.Request().Method {
 		case "POST", "PUT":
@@ -83,8 +80,8 @@ func (er *echoResponder) Respond(req gateway.Requester, status gateway.Status, r
 		break
 	}
 	response := gateway.Response{
-		Page:    req.Pager().Page(),
-		PerPage: req.Pager().PerPage(),
+		Page:    req.Paginator().Page(),
+		PerPage: req.Paginator().PerPage(),
 		Items:   result,
 		Total:   er.total,
 	}

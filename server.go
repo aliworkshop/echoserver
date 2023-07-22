@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"github.com/aliworkshop/configlib"
 	"github.com/aliworkshop/errorslib"
-	"github.com/aliworkshop/gateway"
-	"github.com/aliworkshop/gateway/middleware"
+	"github.com/aliworkshop/gateway/v2"
+	"github.com/aliworkshop/gateway/v2/middleware"
 	"github.com/aliworkshop/loggerlib"
-	"github.com/aliworkshop/loggerlib/logger"
 	"github.com/go-playground/validator/v10"
 	echop "github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	ew "github.com/labstack/echo/v4/middleware"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"path/filepath"
@@ -26,6 +24,7 @@ type echoServer struct {
 	httpServer     http.Server
 	config         config
 	configRegistry configlib.Registry
+	controller     gateway.Controller
 
 	monitoring gateway.MonitoringModel
 }
@@ -101,14 +100,12 @@ func (gs *echoServer) StartMonitoring() {
 	p.Use(gs.server)
 }
 
-func (gs *echoServer) SetupMiddlewares(logger logger.Logger, languageBundle *i18n.Bundle) {
-	middlewares := make([]gateway.HandlerEngine, 0)
+func (gs *echoServer) SetupMiddlewares() {
+	middlewares := make([]gateway.Handler, 0)
 	for key, h := range gs.config.Middlewares {
-		handler := NewHandlerEngine(logger, languageBundle)
-		m := middleware.Get(handler,
-			gs.configRegistry.
-				ValueOf("middlewares").
-				ValueOf(key),
+		m := middleware.Get(gs.configRegistry.
+			ValueOf("middlewares").
+			ValueOf(key),
 			h.Type)
 		if m == nil {
 			panic(fmt.Sprintf("could not find middleware for type: %v", h.Type))
@@ -118,9 +115,29 @@ func (gs *echoServer) SetupMiddlewares(logger logger.Logger, languageBundle *i18
 	gs.Middleware(middlewares...)
 }
 
-func (gs *echoServer) Middleware(handlers ...gateway.HandlerEngine) {
-	_, mfs := gs.match(gs.monitoring, handlers...)
+func (gs *echoServer) Middleware(handlers ...gateway.Handler) {
+	_, mfs := gs.match(gs.monitoring, gs.controller, handlers...)
 	gs.server.Use(mfs...)
+}
+
+func (gs *echoServer) SetController(controller gateway.Controller) {
+	gs.controller = controller
+}
+
+func (gs *echoServer) GetController() gateway.Controller {
+	return gs.controller
+}
+
+func (gs *echoServer) NewRouterGroup(path string) gateway.RouterGroupModel {
+	rg := newRouterGroup(gs.server, gs.controller, gs.config, path)
+	rg.monitoring = gs.monitoring
+	return rg
+}
+
+func (gs *echoServer) Shutdown(timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	return gs.server.Shutdown(ctx)
 }
 
 func (gs *echoServer) Run(addr ...string) error {
@@ -135,16 +152,4 @@ func (gs *echoServer) Run(addr ...string) error {
 		return err
 	}
 	return nil
-}
-
-func (gs *echoServer) NewRouterGroup(path string) gateway.RouterGroupModel {
-	rg := newRouterGroup(gs.server, gs.config, path)
-	rg.monitoring = gs.monitoring
-	return rg
-}
-
-func (gs *echoServer) Shutdown(timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	return gs.server.Shutdown(ctx)
 }

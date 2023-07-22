@@ -2,8 +2,7 @@ package echoserver
 
 import (
 	"context"
-	"fmt"
-	"github.com/aliworkshop/gateway"
+	"github.com/aliworkshop/gateway/v2"
 	"github.com/labstack/echo/v4"
 	"strings"
 )
@@ -28,7 +27,7 @@ func (rh *router) getContext(request gateway.Requester) (context.Context, contex
 	return context.WithTimeout(ctx, rh.config.ConnectionTimeout)
 }
 
-func (rh *router) getHandler(monitoring gateway.MonitoringModel, handler gateway.HandlerEngine,
+func (rh *router) getHandler(monitoring gateway.MonitoringModel, controller gateway.Controller, handler gateway.Handler,
 	isFirstHandler, isLastHandler, shouldRespond bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req gateway.Requester
@@ -45,8 +44,7 @@ func (rh *router) getHandler(monitoring gateway.MonitoringModel, handler gateway
 
 		if isFirstHandler {
 			// only create request on first handler function call
-			l := handler.Logger()
-			req = NewRequest(c, handler.LanguageBundle()).WithLogger(l)
+			req = NewRequest(c, controller.LanguageBundle())
 			ctx, cancel := rh.getContext(req)
 			req.SetConnectionContext(ctx)
 			c.Set("req", req)
@@ -65,13 +63,13 @@ func (rh *router) getHandler(monitoring gateway.MonitoringModel, handler gateway
 			}
 		}
 
+		controller.Process(handler, req, shouldRespond)
 		// respond only on last handler, and if is not responded yet
-		gateway.Handle(handler, req, shouldRespond)
 		return nil
 	}
 }
 
-func (rh *router) getMiddleware(monitoring gateway.MonitoringModel, handler gateway.HandlerEngine,
+func (rh *router) getMiddleware(monitoring gateway.MonitoringModel, controller gateway.Controller, handler gateway.Handler,
 	isFirstHandler, isLastHandler bool) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -79,8 +77,7 @@ func (rh *router) getMiddleware(monitoring gateway.MonitoringModel, handler gate
 
 			if isFirstHandler {
 				// only create request on first handler function call
-				l := handler.Logger()
-				req = NewRequest(c, handler.LanguageBundle()).WithLogger(l)
+				req = NewRequest(c, controller.LanguageBundle())
 				ctx, cancel := rh.getContext(req)
 				req.SetConnectionContext(ctx)
 				c.Set("req", req)
@@ -99,7 +96,7 @@ func (rh *router) getMiddleware(monitoring gateway.MonitoringModel, handler gate
 				}
 			}
 
-			if gateway.Handle(handler, req, false) {
+			if controller.Process(handler, req, false) {
 				return next(c)
 			}
 			return nil
@@ -107,24 +104,20 @@ func (rh *router) getMiddleware(monitoring gateway.MonitoringModel, handler gate
 	}
 }
 
-func (rh *router) match(monitoring gateway.MonitoringModel,
-	hs ...gateway.HandlerEngine) (echo.HandlerFunc, []echo.MiddlewareFunc) {
+func (rh *router) match(monitoring gateway.MonitoringModel, c gateway.Controller,
+	hs ...gateway.Handler) (echo.HandlerFunc, []echo.MiddlewareFunc) {
 	var hf echo.HandlerFunc
 	var mfs []echo.MiddlewareFunc
 	if len(hs) == 1 {
-		hf = rh.getHandler(monitoring, hs[0], true, true, true)
+		hf = rh.getHandler(monitoring, c, hs[0], true, true, true)
 		return hf, mfs
 	}
 	for i, h := range hs[:len(hs)-1] {
-		if h.Logger() == nil {
-			fmt.Println(fmt.Sprintf("logger is not set for "+
-				"handler: %+v, Call to log panics\n", h))
-		}
 		isLastHandler := i == len(hs)-1
-		mf := rh.getMiddleware(monitoring, h, i == 0, isLastHandler)
+		mf := rh.getMiddleware(monitoring, c, h, i == 0, isLastHandler)
 		mfs = append(mfs, mf)
 	}
-	hf = rh.getHandler(monitoring, hs[len(hs)-1], false, true, true)
+	hf = rh.getHandler(monitoring, c, hs[len(hs)-1], false, true, true)
 
 	return hf, mfs
 }

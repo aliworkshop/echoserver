@@ -2,7 +2,7 @@ package echoserver
 
 import (
 	"fmt"
-	"github.com/aliworkshop/gateway"
+	"github.com/aliworkshop/gateway/v2"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"net/http"

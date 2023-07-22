@@ -1,6 +1,6 @@
 package echoserver
 
-import "github.com/aliworkshop/gateway"
+import "github.com/aliworkshop/gateway/v2"
 
 type paginator struct {
 	limit  int

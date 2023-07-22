@@ -2,31 +2,28 @@ package echoserver
 
 import (
 	"context"
+	"github.com/aliworkshop/dfilterlib"
 	"github.com/aliworkshop/errorslib"
-	"github.com/aliworkshop/gateway"
+	"github.com/aliworkshop/gateway/v2"
+	"github.com/aliworkshop/gateway/v2/authorization"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"strconv"
 	"sync"
-
-	"github.com/aliworkshop/dfilterlib"
-	"github.com/aliworkshop/gateway/authorization"
-	"github.com/aliworkshop/loggerlib/logger"
-	"github.com/google/uuid"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type request struct {
 	uid               string
 	context           echo.Context
 	connectionContext context.Context
-	isUpgraded        bool
 	auth              authorization.Authorizer
-	body              interface{}
+	body              any
 	filters           map[string][]string
 	language          gateway.Language
-	log               logger.Logger
 	responded         bool
 	*paginator
 	dFilters []dfilterlib.Filter
@@ -43,10 +40,7 @@ func NewRequest(ctx echo.Context, languageBundle *i18n.Bundle) gateway.Requester
 	req.SetContext(ctx)
 	if languageBundle != nil {
 		acceptLanguage := ctx.Request().Header.Get("Accept-Language")
-		req.language = gateway.Language{
-			AcceptLanguage: acceptLanguage,
-			Localizer:      i18n.NewLocalizer(languageBundle, acceptLanguage, "EN"),
-		}
+		req.SetLanguage(gateway.NewLanguage(languageBundle, acceptLanguage))
 	}
 
 	uid := ctx.Request().Header.Get("X-Request-UID")
@@ -73,15 +67,6 @@ func (r *request) SetConnectionContext(ctx context.Context) {
 
 func (r *request) GetConnectionContext() context.Context {
 	return r.connectionContext
-}
-
-func (r *request) Logger() logger.Logger {
-	return r.log
-}
-
-func (r *request) WithLogger(l logger.Logger) gateway.Requester {
-	r.log = l.With(logger.Field{"UID": r.uid})
-	return r
 }
 
 func (r *request) GetContext() interface{} {
@@ -136,31 +121,39 @@ func (r *request) BindRequest(body interface{}) errorslib.ErrorModel {
 	return nil
 }
 
+func (r *request) SetLanguage(language gateway.Language) {
+	r.language = language
+}
+
 func (r *request) GetLanguage() gateway.Language {
 	return r.language
 }
 
 func (r *request) MustLocalize(lc *i18n.LocalizeConfig) string {
-	return r.language.Localizer.MustLocalize(lc)
+	result, err := r.language.Localize(lc)
+	if err != nil {
+		log.Fatalf("error on localize, err: %v", err)
+	}
+	return result
 }
 
 func (r *request) ShouldLocalize(lc *i18n.LocalizeConfig) string {
-	result, err := r.language.Localizer.Localize(lc)
+	result, err := r.language.Localize(lc)
 	if err != nil {
-		r.Logger().DebugF("error on localize, err: %v", err)
+		log.Printf("error on localize, err: %v", err)
 	}
 	return result
 }
 
 func (r *request) Localize(msgId string, message string, params ...map[string]interface{}) string {
-	if r.language.Localizer == nil {
+	if r.language == nil {
 		return message
 	}
 	var p map[string]interface{}
 	if params != nil && len(params) > 0 {
 		p = params[0]
 	}
-	msg, err := r.language.Localizer.Localize(&i18n.LocalizeConfig{
+	msg, err := r.language.Localize(&i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    msgId,
 			Other: message,
@@ -168,7 +161,7 @@ func (r *request) Localize(msgId string, message string, params ...map[string]in
 		TemplateData: p,
 	})
 	if err != nil {
-		r.Logger().DebugF("error on localize, err: %v", err)
+		log.Printf("error on localize, err: %v", err)
 	}
 	return msg
 }
@@ -193,7 +186,7 @@ func (r *request) GetFile(key string) (*multipart.FileHeader, error) {
 	return r.context.FormFile(key)
 }
 
-func (r *request) Pager() gateway.Paginator {
+func (r *request) Paginator() gateway.Paginator {
 	if r.paginator != nil {
 		return r.paginator
 	}
