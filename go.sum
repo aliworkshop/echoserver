@@ -51,12 +51,6 @@ github.com/aliworkshop/dfilterlib v1.0.0 h1:x1OvuJCxcJyUQCCWR0LfE+NyIEzHnCZsKfdZ
 github.com/aliworkshop/dfilterlib v1.0.0/go.mod h1:i1N4iTtQV1Y7xeXyp+plDVubepH/maE6X0FZNU9FU9w=
 github.com/aliworkshop/errorslib v1.0.0 h1:USO/UZFL8x8tmCCxQ8xjWICG7n5gRBxNOEpfvq9o6g8=
 github.com/aliworkshop/errorslib v1.0.0/go.mod h1:jYW96Mz3yKbkk9NU7UE9EALknkiGeam0QSKZY582Y+c=
-github.com/aliworkshop/gateway v1.3.2 h1:mt2FeMg5QvlNUnz3jpigv0i8vgarQ+cJ30CwAsDWS84=
-github.com/aliworkshop/gateway v1.3.2/go.mod h1:nA2VVB2QlkwJfhG4kPXnUN8SFlhqNe13NXGa4VaQajU=
-github.com/aliworkshop/gateway/v2 v2.0.1 h1:h0wsfmtliw36DIbbZpmB/tJds7VWKCQcUyMUOn8UZ1E=
-github.com/aliworkshop/gateway/v2 v2.0.1/go.mod h1:QPjfj9r8JPAnM7q/Jc5UZwsSjs4GoQWAGLIrPLuM/dY=
-github.com/aliworkshop/gateway/v2 v2.1.0 h1:mnnKAGfoydvJy8wITfyFVYm/WFVBnzWk4iXS0md1qZ8=
-github.com/aliworkshop/gateway/v2 v2.1.0/go.mod h1:QPjfj9r8JPAnM7q/Jc5UZwsSjs4GoQWAGLIrPLuM/dY=
 github.com/aliworkshop/gateway/v2 v2.1.1 h1:5RisGhh0tnxZOlkMPuB/n05w8rJ8gDe3/gkO6sHlzmw=
 github.com/aliworkshop/gateway/v2 v2.1.1/go.mod h1:QPjfj9r8JPAnM7q/Jc5UZwsSjs4GoQWAGLIrPLuM/dY=
 github.com/aliworkshop/loggerlib v1.2.0 h1:jq3tSiC2hVwYRCCX2TjCfc3RcrMlRjEIoAxdIIFLe9s=
