@@ -6,6 +6,7 @@ type paginator struct {
 	limit  int
 	page   int
 	sortBy string
+	total  uint64
 }
 
 func NewPaginator() gateway.Paginator {
@@ -35,4 +36,12 @@ func (p *paginator) SetPerPage(i int) {
 
 func (p *paginator) SortBy() string {
 	return p.sortBy
+}
+
+func (p *paginator) Total() uint64 {
+	return p.total
+}
+
+func (p *paginator) SetTotal(total uint64) {
+	p.total = total
 }

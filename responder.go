@@ -83,7 +83,7 @@ func (er *echoResponder) Respond(req gateway.Requester, status gateway.Status, r
 		Page:    req.Paginator().Page(),
 		PerPage: req.Paginator().PerPage(),
 		Items:   result,
-		Total:   er.total,
+		Total:   req.Paginator().Total(),
 	}
 	ctx.JSON(getStatusCode(status), response)
 }
