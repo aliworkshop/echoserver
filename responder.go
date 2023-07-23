@@ -1,7 +1,7 @@
 package echoserver
 
 import (
-	"github.com/aliworkshop/errorslib"
+	"github.com/aliworkshop/error"
 	"github.com/aliworkshop/gateway/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -88,7 +88,7 @@ func (er *echoResponder) Respond(req gateway.Requester, status gateway.Status, r
 	ctx.JSON(getStatusCode(status), response)
 }
 
-func (er *echoResponder) RespondError(req gateway.Requester, err errorslib.ErrorModel) {
+func (er *echoResponder) RespondError(req gateway.Requester, err error.ErrorModel) {
 	ctx := req.GetContext().(echo.Context)
 	ctx.Request().Header.Set("X-Request-UID", req.GetUid())
 	if er.languageBundle != nil {
@@ -129,7 +129,7 @@ func (er *emptyResponder) Respond(req gateway.Requester, status gateway.Status, 
 	req.SetResponded(true)
 }
 
-func (er *emptyResponder) RespondError(req gateway.Requester, err errorslib.ErrorModel) {
+func (er *emptyResponder) RespondError(req gateway.Requester, err error.ErrorModel) {
 	ctx := req.GetContext().(echo.Context)
 	ctx.Request().Header.Set("X-Request-UID", req.GetUid())
 	ctx.Error(err)

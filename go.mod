@@ -3,11 +3,11 @@ module github.com/aliworkshop/echoserver
 go 1.18
 
 require (
-	github.com/aliworkshop/configlib v1.0.0
-	github.com/aliworkshop/dfilterlib v1.0.0
-	github.com/aliworkshop/errorslib v1.0.0
-	github.com/aliworkshop/gateway/v2 v2.1.1
-	github.com/aliworkshop/loggerlib v1.2.0
+	github.com/aliworkshop/configer v1.1.0
+	github.com/aliworkshop/dfilter v1.1.0
+	github.com/aliworkshop/error v1.1.0
+	github.com/aliworkshop/gateway/v2 v2.2.0
+	github.com/aliworkshop/logger v1.4.0
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/websocket v1.5.0

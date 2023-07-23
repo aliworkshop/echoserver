@@ -2,7 +2,7 @@ package echoserver
 
 import (
 	"fmt"
-	"github.com/aliworkshop/configlib"
+	"github.com/aliworkshop/configer"
 	"github.com/aliworkshop/gateway/v2"
 	"github.com/aliworkshop/gateway/v2/middleware"
 	"github.com/labstack/echo/v4"
@@ -71,7 +71,7 @@ func (r *routerGroup) Group(relativePath string) gateway.RouterGroupModel {
 	return group
 }
 
-func (r *routerGroup) SetupMiddlewares(registry configlib.Registry) {
+func (r *routerGroup) SetupMiddlewares(registry configer.Registry) {
 	if err := registry.Unmarshal(&r.mConfig); err != nil {
 		panic(err)
 	}

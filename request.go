@@ -2,8 +2,8 @@ package echoserver
 
 import (
 	"context"
-	"github.com/aliworkshop/dfilterlib"
-	"github.com/aliworkshop/errorslib"
+	"github.com/aliworkshop/dfilter"
+	errors "github.com/aliworkshop/error"
 	"github.com/aliworkshop/gateway/v2"
 	"github.com/aliworkshop/gateway/v2/authorization"
 	"github.com/google/uuid"
@@ -26,7 +26,7 @@ type request struct {
 	language          gateway.Language
 	responded         bool
 	*paginator
-	dFilters []dfilterlib.Filter
+	dFilters []dfilter.Filter
 
 	temp    map[string]interface{}
 	tempMtx *sync.Mutex
@@ -109,14 +109,14 @@ func (r *request) GetBody() interface{} {
 	return r.body
 }
 
-func (r *request) BindRequest(body interface{}) errorslib.ErrorModel {
+func (r *request) BindRequest(body interface{}) errors.ErrorModel {
 	err := r.context.Bind(body)
 	if err != nil {
-		return errorslib.Validation(err)
+		return errors.Validation(err)
 	}
 	r.body = body
 	if err = r.context.Validate(r.body); err != nil {
-		return errorslib.Validation(err).WithMessage(err.Error())
+		return errors.Validation(err).WithMessage(err.Error())
 	}
 	return nil
 }
@@ -218,11 +218,11 @@ func (r *request) SetResponded(responded bool) {
 	r.responded = responded
 }
 
-func (r *request) SetDynamicFilters(fs []dfilterlib.Filter) {
+func (r *request) SetDynamicFilters(fs []dfilter.Filter) {
 	r.dFilters = fs
 }
 
-func (r *request) GetDynamicFilters() []dfilterlib.Filter {
+func (r *request) GetDynamicFilters() []dfilter.Filter {
 	return r.dFilters
 }
 

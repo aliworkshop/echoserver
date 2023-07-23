@@ -1,26 +1,26 @@
 package echoserver
 
 import (
-	"github.com/aliworkshop/errorslib"
+	"github.com/aliworkshop/error"
 )
 
-func getStatusCodeByError(err errorslib.ErrorModel) int {
+func getStatusCodeByError(err error.ErrorModel) int {
 	switch err.Type() {
-	case errorslib.TypeValidation:
+	case error.TypeValidation:
 		return 400
-	case errorslib.TypeNotFound:
+	case error.TypeNotFound:
 		return 404
-	case errorslib.TypeUnAuthorized:
+	case error.TypeUnAuthorized:
 		return 401
-	case errorslib.TypeForbidden:
+	case error.TypeForbidden:
 		return 403
-	case errorslib.TypeTooManyRequests:
+	case error.TypeTooManyRequests:
 		return 429
-	case errorslib.TypeFailedDependency:
+	case error.TypeFailedDependency:
 		return 424
-	case errorslib.TypeTooEarly:
+	case error.TypeTooEarly:
 		return 425
-		//case errorslib.TypeInternal:
+		//case error.TypeInternal:
 		//	return ???
 	}
 	return 500

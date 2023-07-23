@@ -3,11 +3,11 @@ package echoserver
 import (
 	"context"
 	"fmt"
-	"github.com/aliworkshop/configlib"
-	"github.com/aliworkshop/errorslib"
+	"github.com/aliworkshop/configer"
+	errors "github.com/aliworkshop/error"
 	"github.com/aliworkshop/gateway/v2"
 	"github.com/aliworkshop/gateway/v2/middleware"
-	"github.com/aliworkshop/loggerlib"
+	"github.com/aliworkshop/logger"
 	"github.com/go-playground/validator/v10"
 	echop "github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
@@ -23,13 +23,13 @@ type echoServer struct {
 	server         *echo.Echo
 	httpServer     http.Server
 	config         config
-	configRegistry configlib.Registry
+	configRegistry configer.Registry
 	controller     gateway.Controller
 
 	monitoring gateway.MonitoringModel
 }
 
-func NewServer(configRegistry configlib.Registry) gateway.ServerModel {
+func NewServer(configRegistry configer.Registry) gateway.ServerModel {
 	var cfg config
 	if err := configRegistry.Unmarshal(&cfg); err != nil {
 		panic(err)
@@ -54,7 +54,7 @@ func NewServer(configRegistry configlib.Registry) gateway.ServerModel {
 	if gs.config.Http.Development {
 		s.Use(ew.Logger())
 	} else {
-		l, err := loggerlib.GetLogger(configRegistry.ValueOf("http.logger"))
+		l, err := logger.GetLogger(configRegistry.ValueOf("http.logger"))
 		if err != nil {
 			panic("logger for http is not set. set http server config to development")
 		}
@@ -79,7 +79,7 @@ func (gs *echoServer) SetMonitoringHandler(monitoring gateway.MonitoringModel) {
 	gs.monitoring = monitoring
 }
 
-func (gs *echoServer) AddMonitoring(m *gateway.Monitoring) (prometheus.Collector, errorslib.ErrorModel) {
+func (gs *echoServer) AddMonitoring(m *gateway.Monitoring) (prometheus.Collector, errors.ErrorModel) {
 	metric := echop.NewMetric(&echop.Metric{
 		ID:          m.ID,
 		Name:        m.Name,
@@ -89,7 +89,7 @@ func (gs *echoServer) AddMonitoring(m *gateway.Monitoring) (prometheus.Collector
 		Buckets:     m.Buckets,
 	}, m.Subsystem)
 	if err := prometheus.Register(metric); err != nil {
-		return nil, errorslib.New(fmt.Errorf("%s could not be registered in Prometheus: %v", m.Name, err))
+		return nil, errors.New(fmt.Errorf("%s could not be registered in Prometheus: %v", m.Name, err))
 	}
 	return metric, nil
 }
