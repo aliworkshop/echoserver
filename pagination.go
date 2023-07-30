@@ -30,18 +30,23 @@ func (p *paginator) PerPage() int {
 func (p *paginator) SetPage(i int) {
 	p.page = i
 }
-func (p *paginator) SetPerPage(i int) {
+
+func (p *paginator) SetLimit(i int) {
 	p.limit = i
+}
+
+func (p *paginator) SetSort(sort string) {
+	p.sortBy = sort
 }
 
 func (p *paginator) SortBy() string {
 	return p.sortBy
 }
 
-func (p *paginator) Total() uint64 {
-	return p.total
-}
-
 func (p *paginator) SetTotal(total uint64) {
 	p.total = total
+}
+
+func (p *paginator) Total() uint64 {
+	return p.total
 }

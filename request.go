@@ -25,8 +25,8 @@ type request struct {
 	filters           map[string][]string
 	language          gateway.Language
 	responded         bool
-	*paginator
-	dFilters []dfilter.Filter
+	paginator         gateway.Paginator
+	dFilters          []dfilter.Filter
 
 	temp    map[string]interface{}
 	tempMtx *sync.Mutex
@@ -114,10 +114,10 @@ func (r *request) BindRequest(body interface{}) errors.ErrorModel {
 	if err != nil {
 		return errors.Validation(err)
 	}
-	r.body = body
 	if err = r.context.Validate(r.body); err != nil {
 		return errors.Validation(err).WithMessage(err.Error())
 	}
+	r.body = body
 	return nil
 }
 
@@ -190,14 +190,14 @@ func (r *request) Paginator() gateway.Paginator {
 	if r.paginator != nil {
 		return r.paginator
 	}
-	p := new(paginator)
-	page := r.context.QueryParam("$page")
-	p.page, _ = strconv.Atoi(page)
+	p := NewPaginator()
+	page, _ := strconv.Atoi(r.GetQuery("$page"))
+	p.SetPage(page)
 
-	limit := r.context.QueryParam("$limit")
-	p.limit, _ = strconv.Atoi(limit)
+	limit, _ := strconv.Atoi(r.GetQuery("$limit"))
+	p.SetLimit(limit)
 
-	p.sortBy = r.context.QueryParam("$sortby")
+	p.SetSort(r.GetQuery("$sortby"))
 	r.paginator = p
 	return p
 }
