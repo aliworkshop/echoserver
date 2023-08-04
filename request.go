@@ -114,7 +114,7 @@ func (r *request) BindRequest(body interface{}) errors.ErrorModel {
 	if err != nil {
 		return errors.Validation(err)
 	}
-	if err = r.context.Validate(r.body); err != nil {
+	if err = r.context.Validate(body); err != nil {
 		return errors.Validation(err).WithMessage(err.Error())
 	}
 	r.body = body
