@@ -121,3 +121,14 @@ func (rh *router) match(monitoring gateway.MonitoringModel, c gateway.Controller
 
 	return hf, mfs
 }
+
+func (rh *router) matchMiddleware(monitoring gateway.MonitoringModel, c gateway.Controller,
+	hs ...gateway.Handler) []echo.MiddlewareFunc {
+	var mfs []echo.MiddlewareFunc
+	for i, h := range hs {
+		mf := rh.getMiddleware(monitoring, c, h, i == 0, i == len(hs)-1)
+		mfs = append(mfs, mf)
+	}
+
+	return mfs
+}

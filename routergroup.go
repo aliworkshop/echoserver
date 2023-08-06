@@ -88,6 +88,6 @@ func (r *routerGroup) SetupMiddlewares(registry configer.Registry) {
 }
 
 func (r *routerGroup) Middleware(handlers ...gateway.Handler) {
-	_, mfs := r.match(r.monitoring, r.c, handlers...)
+	mfs := r.matchMiddleware(r.monitoring, r.c, handlers...)
 	r.routerGroup.Use(mfs...)
 }

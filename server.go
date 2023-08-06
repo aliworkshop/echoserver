@@ -14,7 +14,6 @@ import (
 	ew "github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
-	"path/filepath"
 	"time"
 )
 
@@ -47,9 +46,6 @@ func NewServer(configRegistry configer.Registry) gateway.ServerModel {
 	if !cfg.Development {
 		s.Use(ew.Recover())
 	}
-
-	group := s.Group("assets")
-	group.Use(ew.Static(filepath.Join("uploads")))
 
 	if gs.config.Http.Development {
 		s.Use(ew.Logger())
