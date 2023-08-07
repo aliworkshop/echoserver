@@ -6,7 +6,6 @@ import (
 	"github.com/aliworkshop/configer"
 	errors "github.com/aliworkshop/error"
 	"github.com/aliworkshop/gateway/v2"
-	"github.com/aliworkshop/gateway/v2/middleware"
 	"github.com/aliworkshop/logger"
 	"github.com/go-playground/validator/v10"
 	echop "github.com/labstack/echo-contrib/prometheus"
@@ -14,6 +13,7 @@ import (
 	ew "github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -24,8 +24,6 @@ type echoServer struct {
 	config         config
 	configRegistry configer.Registry
 	controller     gateway.Controller
-
-	monitoring gateway.MonitoringModel
 }
 
 func NewServer(configRegistry configer.Registry) gateway.ServerModel {
@@ -40,7 +38,6 @@ func NewServer(configRegistry configer.Registry) gateway.ServerModel {
 		},
 		config:         cfg,
 		configRegistry: configRegistry,
-		monitoring:     gateway.DefaultMonitoring,
 	}
 	s := echo.New()
 	if !cfg.Development {
@@ -71,10 +68,6 @@ func NewServer(configRegistry configer.Registry) gateway.ServerModel {
 	return gs
 }
 
-func (gs *echoServer) SetMonitoringHandler(monitoring gateway.MonitoringModel) {
-	gs.monitoring = monitoring
-}
-
 func (gs *echoServer) AddMonitoring(m *gateway.Monitoring) (prometheus.Collector, errors.ErrorModel) {
 	metric := echop.NewMetric(&echop.Metric{
 		ID:          m.ID,
@@ -91,28 +84,18 @@ func (gs *echoServer) AddMonitoring(m *gateway.Monitoring) (prometheus.Collector
 }
 
 func (gs *echoServer) StartMonitoring() {
-	p := echop.NewPrometheus("app", nil)
+	p := echop.NewPrometheus("app", func(c echo.Context) bool {
+		if strings.HasSuffix(c.Path(), "monitoring/metrics") {
+			return true
+		}
+		return false
+	})
 	p.MetricsPath = "monitoring/metrics"
 	p.Use(gs.server)
 }
 
-func (gs *echoServer) SetupMiddlewares() {
-	middlewares := make([]gateway.Handler, 0)
-	for key, h := range gs.config.Middlewares {
-		m := middleware.Get(gs.configRegistry.
-			ValueOf("middlewares").
-			ValueOf(key),
-			h.Type)
-		if m == nil {
-			panic(fmt.Sprintf("could not find middleware for type: %v", h.Type))
-		}
-		middlewares = append(middlewares, m)
-	}
-	gs.Middleware(middlewares...)
-}
-
 func (gs *echoServer) Middleware(handlers ...gateway.Handler) {
-	_, mfs := gs.match(gs.monitoring, gs.controller, handlers...)
+	_, mfs := gs.match(gs.controller, handlers...)
 	gs.server.Use(mfs...)
 }
 
@@ -126,7 +109,6 @@ func (gs *echoServer) GetController() gateway.Controller {
 
 func (gs *echoServer) NewRouterGroup(path string) gateway.RouterGroupModel {
 	rg := newRouterGroup(gs.server, gs.controller, gs.config, path)
-	rg.monitoring = gs.monitoring
 	return rg
 }
 

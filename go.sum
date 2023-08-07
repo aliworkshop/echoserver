@@ -55,6 +55,8 @@ github.com/aliworkshop/gateway/v2 v2.2.0 h1:FjMpYc0stLPu4k1SLJ8/srefQ35+v0vbmoJj
 github.com/aliworkshop/gateway/v2 v2.2.0/go.mod h1:aqqhLvQlIW/28o53rqaZFVad56tmhdUy5IxmpcZxFsc=
 github.com/aliworkshop/gateway/v2 v2.2.1 h1:2EfXSWJRih6dlxm7CopFmuegoTuMZ5UQInxNtnwNi4Q=
 github.com/aliworkshop/gateway/v2 v2.2.1/go.mod h1:aqqhLvQlIW/28o53rqaZFVad56tmhdUy5IxmpcZxFsc=
+github.com/aliworkshop/gateway/v2 v2.2.2 h1:X+JSIZCxp2BpR/iJPlVza0dHxq008QdhZmpe2ZyqJh8=
+github.com/aliworkshop/gateway/v2 v2.2.2/go.mod h1:aqqhLvQlIW/28o53rqaZFVad56tmhdUy5IxmpcZxFsc=
 github.com/aliworkshop/logger v1.4.0 h1:SuOmCl/OH1cav+DvQ09dCKl7nPqrJyEDxOS6ZQOnCu4=
 github.com/aliworkshop/logger v1.4.0/go.mod h1:+mF542FS8Ot5WGu3HdtLCV+tmiP9qzr8W4v8bwZl7zI=
 github.com/appleboy/gofight/v2 v2.1.2 h1:VOy3jow4vIK8BRQJoC/I9muxyYlJ2yb9ht2hZoS3rf4=
