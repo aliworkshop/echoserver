@@ -2,7 +2,7 @@ package echoserver
 
 import (
 	"github.com/aliworkshop/gateway/v2"
-	"github.com/aliworkshop/logger/logger"
+	"github.com/aliworkshop/logger"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"time"
