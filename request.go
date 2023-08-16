@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"io"
+	"io/fs"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -297,4 +299,36 @@ func (r *request) GetTemp(key string) interface{} {
 
 func (r *request) GetStatusCode() int {
 	return r.context.Response().Status
+}
+
+func (r *request) RespondBlob(status gateway.Status, contentType string, body []byte) errors.ErrorModel {
+	err := r.context.Blob(getStatusCode(status), contentType, body)
+	if err != nil {
+		return errors.HandleError(err)
+	}
+	return nil
+}
+
+func (r *request) RespondStream(status gateway.Status, contentType string, reader io.Reader) errors.ErrorModel {
+	err := r.context.Stream(getStatusCode(status), contentType, reader)
+	if err != nil {
+		return errors.HandleError(err)
+	}
+	return nil
+}
+
+func (r *request) RespondFile(file string) errors.ErrorModel {
+	err := r.context.File(file)
+	if err != nil {
+		return errors.HandleError(err)
+	}
+	return nil
+}
+
+func (r *request) RespondFsFile(file string, filesystem fs.FS) errors.ErrorModel {
+	err := r.context.File(file)
+	if err != nil {
+		return errors.HandleError(err)
+	}
+	return nil
 }

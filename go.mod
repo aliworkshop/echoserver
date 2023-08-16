@@ -6,7 +6,7 @@ require (
 	github.com/aliworkshop/configer v1.1.0
 	github.com/aliworkshop/dfilter v1.1.0
 	github.com/aliworkshop/error v1.1.0
-	github.com/aliworkshop/gateway/v2 v2.2.3
+	github.com/aliworkshop/gateway/v2 v2.3.0
 	github.com/aliworkshop/logger v1.5.0
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/google/uuid v1.1.2
@@ -49,9 +49,9 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.22.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
