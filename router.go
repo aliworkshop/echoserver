@@ -30,8 +30,13 @@ func (rh *router) getContext(request gateway.Requester) (context.Context, contex
 func (rh *router) getHandler(controller gateway.Controller, handler gateway.Handler, shouldRespond bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 
-		req := NewRequest(c, controller.LanguageBundle())
-		c.Set("req", req)
+		var req gateway.Requester
+		if _req := c.Get("req"); _req == nil {
+			req = _req.(gateway.Requester)
+		} else {
+			req = NewRequest(c, controller.LanguageBundle())
+			c.Set("req", req)
+		}
 		controller.Process(handler, req, shouldRespond)
 		return nil
 	}
@@ -40,7 +45,14 @@ func (rh *router) getHandler(controller gateway.Controller, handler gateway.Hand
 func (rh *router) getMiddleware(controller gateway.Controller, handler gateway.Handler) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			req := NewRequest(c, controller.LanguageBundle())
+
+			var req gateway.Requester
+			if _req := c.Get("req"); _req != nil {
+				req = _req.(gateway.Requester)
+			} else {
+				req = NewRequest(c, controller.LanguageBundle())
+				c.Set("req", req)
+			}
 			if controller.Process(handler, req, false) {
 				return next(c)
 			}
