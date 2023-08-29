@@ -31,7 +31,7 @@ func (rh *router) getHandler(controller gateway.Controller, handler gateway.Hand
 	return func(c echo.Context) error {
 
 		var req gateway.Requester
-		if _req := c.Get("req"); _req == nil {
+		if _req := c.Get("req"); _req != nil {
 			req = _req.(gateway.Requester)
 		} else {
 			req = NewRequest(c, controller.LanguageBundle())
