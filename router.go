@@ -2,6 +2,7 @@ package echoserver
 
 import (
 	"context"
+	"errors"
 	"github.com/aliworkshop/gateway/v2"
 	"github.com/labstack/echo/v4"
 	"strings"
@@ -30,6 +31,9 @@ func (rh *router) getContext(request gateway.Requester) (context.Context, contex
 func (rh *router) getHandler(controller gateway.Controller, handler gateway.Handler, shouldRespond bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 
+		if handler == nil {
+			return errors.New("no handler is defined for this route!!!")
+		}
 		var req gateway.Requester
 		if _req := c.Get("req"); _req != nil {
 			req = _req.(gateway.Requester)
