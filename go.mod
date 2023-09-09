@@ -5,11 +5,11 @@ go 1.18
 require (
 	github.com/aliworkshop/configer v1.1.0
 	github.com/aliworkshop/dfilter v1.1.0
-	github.com/aliworkshop/error v1.1.0
+	github.com/aliworkshop/error v1.2.0
 	github.com/aliworkshop/gateway/v2 v2.3.0
 	github.com/aliworkshop/logger v1.5.0
 	github.com/go-playground/validator/v10 v10.11.2
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/labstack/echo-contrib v0.13.1
 	github.com/labstack/echo/v4 v4.10.0

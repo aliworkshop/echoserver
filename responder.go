@@ -98,10 +98,8 @@ func (er *echoResponder) RespondError(req gateway.Requester, err error.ErrorMode
 				DefaultMessage: &i18n.Message{
 					ID:    errId,
 					Other: err.Message(),
-					One:   err.MessageOne(),
 				},
 				TemplateData: err.Properties(),
-				PluralCount:  err.PluralCount(),
 			}))
 		}
 	}

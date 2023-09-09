@@ -16,12 +16,6 @@ func getStatusCodeByError(err error.ErrorModel) int {
 		return 403
 	case error.TypeTooManyRequests:
 		return 429
-	case error.TypeFailedDependency:
-		return 424
-	case error.TypeTooEarly:
-		return 425
-		//case error.TypeInternal:
-		//	return ???
 	}
 	return 500
 }
