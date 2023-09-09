@@ -127,10 +127,6 @@ func (r *request) SetLanguage(language gateway.Language) {
 	r.language = language
 }
 
-func (r *request) GetLanguage() gateway.Language {
-	return r.language
-}
-
 func (r *request) MustLocalize(lc *i18n.LocalizeConfig) string {
 	result, err := r.language.Localize(lc)
 	if err != nil {
@@ -170,10 +166,6 @@ func (r *request) Localize(msgId string, message string, params ...map[string]in
 
 func (r *request) SetContext(i interface{}) {
 	r.context = i.(echo.Context)
-}
-
-func (r *request) SetModel(i interface{}) {
-	r.body = i
 }
 
 func (r *request) GetParam(key string) string {
@@ -239,7 +231,6 @@ func (r *request) Filters() map[string][]string {
 	return r.filters
 }
 
-// authorization methods
 func (r *request) Token() (token string) {
 	if r.auth == nil {
 		return
