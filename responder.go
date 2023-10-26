@@ -93,7 +93,7 @@ func (er *echoResponder) RespondError(req gateway.Requester, err error.ErrorMode
 	ctx.Request().Header.Set("X-Request-UID", req.GetUid())
 	if er.languageBundle != nil {
 		errId := err.Id()
-		if errId != "" && (err.IsMsgDefault() || !err.IsIdDefault()) {
+		if errId != "" && (err.IsMsgDefault() || !err.IsIdDefault() || len(err.Properties()) > 0) {
 			err = err.Clone().WithMessage(req.ShouldLocalize(&i18n.LocalizeConfig{
 				DefaultMessage: &i18n.Message{
 					ID:    errId,
