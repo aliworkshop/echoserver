@@ -1,6 +1,10 @@
 package echoserver
 
-import "time"
+import (
+	"github.com/labstack/echo/v4"
+	"net/http"
+	"time"
+)
 
 type CSRFConfig struct {
 	CookieKey string
@@ -23,6 +27,11 @@ type Http struct {
 	ServiceName       string `mapstructure:"servicename"`
 	CSRF              struct {
 		SessionTypes map[string]*CSRFConfig
+	}
+	Cors struct {
+		AllowOrigins []string
+		AllowMethods []string
+		AllowHeaders []string
 	}
 }
 
@@ -49,6 +58,19 @@ func (c *config) Initialize() {
 				CookieKey: "CSRF_TOKEN_IMPORTANT",
 				HeaderKey: "X-CSRF-TOKEN-IMPORTANT",
 			},
+		}
+	}
+	if len(c.Cors.AllowOrigins) == 0 {
+		c.Cors.AllowOrigins = []string{"*"}
+	}
+	if len(c.Cors.AllowMethods) == 0 {
+		c.Cors.AllowMethods = []string{
+			http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions,
+		}
+	}
+	if len(c.Cors.AllowHeaders) == 0 {
+		c.Cors.AllowHeaders = []string{
+			echo.HeaderAuthorization, echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept,
 		}
 	}
 }

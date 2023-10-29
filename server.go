@@ -54,13 +54,9 @@ func NewServer(configRegistry configer.Registry) gateway.ServerModel {
 		s.Use(NewLoggerHandler(l, gs.config.Http))
 	}
 	s.Use(ew.CORSWithConfig(ew.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{
-			http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions,
-		},
-		AllowHeaders: []string{
-			echo.HeaderAuthorization, echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept,
-		},
+		AllowOrigins: cfg.Cors.AllowOrigins,
+		AllowMethods: cfg.Cors.AllowMethods,
+		AllowHeaders: cfg.Cors.AllowHeaders,
 	}))
 	s.Validator = &customValidator{validator: validator.New()}
 	gs.server = s
