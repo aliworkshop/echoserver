@@ -246,12 +246,20 @@ func (r *request) GetAuth() authorization.Authorizer {
 	return r.auth
 }
 
-func (r *request) GetCurrentAccountId() interface{} {
+func (r *request) GetCurrentAccountId() uint64 {
 	auth := r.GetAuth()
 	if auth != nil {
 		return auth.GetCurrentAccountId()
 	}
-	return nil
+	return 0
+}
+
+func (r *request) GetCurrentAccountUuid() string {
+	auth := r.GetAuth()
+	if auth != nil {
+		return auth.GetCurrentAccountUuid()
+	}
+	return ""
 }
 
 func (r *request) IsAuthenticated() bool {
@@ -290,6 +298,14 @@ func (r *request) GetTemp(key string) interface{} {
 
 func (r *request) GetStatusCode() int {
 	return r.context.Response().Status
+}
+
+func (r *request) Websocket() (gateway.WebSocketHandler, errors.ErrorModel) {
+	ws, err := upgrade(r.context)
+	if err != nil {
+		return nil, errors.HandleError(err)
+	}
+	return ws, nil
 }
 
 func (r *request) RespondBlob(status gateway.Status, contentType string, body []byte) errors.ErrorModel {

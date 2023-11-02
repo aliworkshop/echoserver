@@ -43,8 +43,8 @@ func NewLoggerHandler(l logger.Logger, serverConfig Http) echo.MiddlewareFunc {
 					"Mode":       c.Request().Header.Values("X-Mode"),
 				}
 				if req := c.Get("req"); req != nil {
-					request := req.(gateway.Requester)
-					if userId := request.GetCurrentAccountId(); userId != nil {
+					requester := req.(gateway.Requester)
+					if userId := requester.GetCurrentAccountId(); userId > 0 {
 						meta["UserId"] = userId
 					}
 				}
