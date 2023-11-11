@@ -13,39 +13,39 @@ type echoWebSocket struct {
 	conn *websocket.Conn
 }
 
-func (gws *echoWebSocket) Read() (int, []byte, error) {
-	return gws.conn.ReadMessage()
+func (ew *echoWebSocket) Read() (int, []byte, error) {
+	return ew.conn.ReadMessage()
 }
 
-func (gws *echoWebSocket) Write(mType int, msg []byte) error {
-	return gws.conn.WriteMessage(mType, msg)
+func (ew *echoWebSocket) Write(mType int, msg []byte) error {
+	return ew.conn.WriteMessage(mType, msg)
 }
 
-func (gws *echoWebSocket) WriteJson(msg interface{}) error {
-	return gws.conn.WriteJSON(msg)
+func (ew *echoWebSocket) WriteJson(msg interface{}) error {
+	return ew.conn.WriteJSON(msg)
 }
 
-func (gws *echoWebSocket) Close() {
-	err := gws.conn.Close()
+func (ew *echoWebSocket) Close() {
+	err := ew.conn.Close()
 	if err != nil {
 		fmt.Println("in close handler", err)
 	}
 }
-func (gws *echoWebSocket) SetReadDeadLine(deadline time.Duration) {
-	gws.conn.SetReadDeadline(time.Now().Add(deadline))
+func (ew *echoWebSocket) SetReadDeadLine(deadline time.Duration) {
+	ew.conn.SetReadDeadline(time.Now().Add(deadline))
 }
-func (gws *echoWebSocket) SetWriteDeadLine(deadline time.Duration) {
-	gws.conn.SetWriteDeadline(time.Now().Add(deadline))
+func (ew *echoWebSocket) SetWriteDeadLine(deadline time.Duration) {
+	ew.conn.SetWriteDeadline(time.Now().Add(deadline))
 }
-func (gws *echoWebSocket) WriteControl(mType int, msg []byte, deadline time.Time) error {
-	return gws.conn.WriteControl(mType, msg, deadline)
+func (ew *echoWebSocket) WriteControl(mType int, msg []byte, deadline time.Time) error {
+	return ew.conn.WriteControl(mType, msg, deadline)
 }
-func (gws *echoWebSocket) SetPingHandler(f func(string) error) error {
-	gws.conn.SetPingHandler(f)
+func (ew *echoWebSocket) SetPingHandler(f func(string) error) error {
+	ew.conn.SetPingHandler(f)
 	return nil
 }
-func (gws *echoWebSocket) SetCloseHandler(f func(code int, text string) error) error {
-	gws.conn.SetCloseHandler(f)
+func (ew *echoWebSocket) SetCloseHandler(f func(code int, text string) error) error {
+	ew.conn.SetCloseHandler(f)
 	return nil
 }
 
