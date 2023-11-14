@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/aliworkshop/configer v1.1.0
 	github.com/aliworkshop/dfilter v1.1.0
-	github.com/aliworkshop/error v1.2.0
+	github.com/aliworkshop/error v1.3.0
 	github.com/aliworkshop/gateway/v2 v2.3.3
 	github.com/aliworkshop/logger v1.5.0
 	github.com/go-playground/validator/v10 v10.11.2

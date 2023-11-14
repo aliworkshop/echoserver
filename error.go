@@ -2,20 +2,23 @@ package echoserver
 
 import (
 	"github.com/aliworkshop/error"
+	"net/http"
 )
 
 func getStatusCodeByError(err error.ErrorModel) int {
 	switch err.Type() {
 	case error.TypeValidation:
-		return 400
+		return http.StatusBadGateway
 	case error.TypeNotFound:
-		return 404
+		return http.StatusNotFound
 	case error.TypeUnAuthorized:
-		return 401
+		return http.StatusUnauthorized
 	case error.TypeForbidden:
-		return 403
+		return http.StatusForbidden
 	case error.TypeTooManyRequests:
-		return 429
+		return http.StatusTooManyRequests
+	case error.TypeDuplicate:
+		return http.StatusConflict
 	}
-	return 500
+	return http.StatusInternalServerError
 }

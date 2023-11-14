@@ -53,6 +53,8 @@ github.com/aliworkshop/error v1.1.0 h1:3FweSjOopjK77cUIf7Uc3xp5c4lwP7v7lHAuM9KNW
 github.com/aliworkshop/error v1.1.0/go.mod h1:VRB+hcvwb2JVirODAkkL6akeV44yfgEPhHaKgIEq3aI=
 github.com/aliworkshop/error v1.2.0 h1:2DXIsM/U/mmbhA0RQKMDBP4INksIKHRijP2H1xWuivQ=
 github.com/aliworkshop/error v1.2.0/go.mod h1:VRB+hcvwb2JVirODAkkL6akeV44yfgEPhHaKgIEq3aI=
+github.com/aliworkshop/error v1.3.0 h1:b6jJm2HSXdBYQi+KcpYo0WL2f+KnCuAf6/nILEmVgvk=
+github.com/aliworkshop/error v1.3.0/go.mod h1:VRB+hcvwb2JVirODAkkL6akeV44yfgEPhHaKgIEq3aI=
 github.com/aliworkshop/gateway/v2 v2.3.0 h1:VMnNH1iwji3pogp34nQHxKM0oE06btUowEoU83qs3k8=
 github.com/aliworkshop/gateway/v2 v2.3.0/go.mod h1:zXO+o5fpLV105k101I5ljVREeJLjExEMGhc3H8yvtU4=
 github.com/aliworkshop/gateway/v2 v2.3.2 h1:vkhxiYoB2qNBiTB8zBmR/yi8iwsEcQ0hCgQSn4EtLt8=
