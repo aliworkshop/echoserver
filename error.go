@@ -8,7 +8,7 @@ import (
 func getStatusCodeByError(err error.ErrorModel) int {
 	switch err.Type() {
 	case error.TypeValidation:
-		return http.StatusBadGateway
+		return http.StatusBadRequest
 	case error.TypeNotFound:
 		return http.StatusNotFound
 	case error.TypeUnAuthorized:
