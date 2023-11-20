@@ -180,6 +180,14 @@ func (r *request) GetFile(key string) (*multipart.FileHeader, error) {
 	return r.context.FormFile(key)
 }
 
+func (r *request) GetFiles(key string) ([]*multipart.FileHeader, error) {
+	form, err := r.context.MultipartForm()
+	if err != nil {
+		return nil, err
+	}
+	return form.File[key], nil
+}
+
 func (r *request) Paginator() gateway.Paginator {
 	if r.paginator != nil {
 		return r.paginator
