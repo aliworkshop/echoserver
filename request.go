@@ -270,14 +270,14 @@ func (r *request) IsAuthenticated() bool {
 }
 
 func (r *request) GetScopes() []string {
-	if r.auth == nil {
+	if !r.auth.IsAuthenticated() {
 		return nil
 	}
 	return r.auth.GetScopes()
 }
 
 func (r *request) HasScope(scopes ...string) bool {
-	if r.auth == nil {
+	if !r.auth.IsAuthenticated() {
 		return false
 	}
 	return r.auth.HasScope(scopes...)
