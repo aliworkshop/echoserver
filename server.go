@@ -12,6 +12,7 @@ import (
 	"github.com/labstack/echo/v4"
 	ew "github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
+	"html/template"
 	"net/http"
 	"strings"
 	"time"
@@ -26,13 +27,20 @@ type echoServer struct {
 	controller     gateway.Controller
 }
 
+func (es *echoServer) LoadHtml(path string) {
+	renderer := &TemplateRenderer{
+		templates: template.Must(template.ParseGlob(path)),
+	}
+	es.server.Renderer = renderer
+}
+
 func NewServer(configRegistry configer.Registry) gateway.ServerModel {
 	var cfg config
 	if err := configRegistry.Unmarshal(&cfg); err != nil {
 		panic(err)
 	}
 	cfg.Initialize()
-	gs := &echoServer{
+	es := &echoServer{
 		router: router{
 			config: cfg,
 		},
@@ -44,14 +52,14 @@ func NewServer(configRegistry configer.Registry) gateway.ServerModel {
 		s.Use(ew.Recover())
 	}
 
-	if gs.config.Http.Development {
+	if es.config.Http.Development {
 		s.Use(ew.Logger())
 	} else {
 		l, err := logger.GetLogger(configRegistry.ValueOf("http.logger"))
 		if err != nil {
 			panic("logger for http is not set. set http server config to development")
 		}
-		s.Use(NewLoggerHandler(l, gs.config.Http))
+		s.Use(NewLoggerHandler(l, es.config.Http))
 	}
 	s.Use(ew.CORSWithConfig(ew.CORSConfig{
 		AllowOrigins: cfg.Cors.AllowOrigins,
@@ -59,12 +67,12 @@ func NewServer(configRegistry configer.Registry) gateway.ServerModel {
 		AllowHeaders: cfg.Cors.AllowHeaders,
 	}))
 	s.Validator = &customValidator{validator: validator.New()}
-	gs.server = s
+	es.server = s
 
-	return gs
+	return es
 }
 
-func (gs *echoServer) AddMonitoring(m *gateway.Monitoring) (prometheus.Collector, errors.ErrorModel) {
+func (es *echoServer) AddMonitoring(m *gateway.Monitoring) (prometheus.Collector, errors.ErrorModel) {
 	metric := echop.NewMetric(&echop.Metric{
 		ID:          m.ID,
 		Name:        m.Name,
@@ -79,7 +87,7 @@ func (gs *echoServer) AddMonitoring(m *gateway.Monitoring) (prometheus.Collector
 	return metric, nil
 }
 
-func (gs *echoServer) StartMonitoring() {
+func (es *echoServer) StartMonitoring() {
 	p := echop.NewPrometheus("app", func(c echo.Context) bool {
 		if strings.HasSuffix(c.Path(), "monitoring/metrics") {
 			return true
@@ -87,38 +95,38 @@ func (gs *echoServer) StartMonitoring() {
 		return false
 	})
 	p.MetricsPath = "monitoring/metrics"
-	p.Use(gs.server)
+	p.Use(es.server)
 }
 
-func (gs *echoServer) Middleware(handlers ...gateway.Handler) {
-	_, mfs := gs.match(gs.controller, handlers...)
-	gs.server.Use(mfs...)
+func (es *echoServer) Middleware(handlers ...gateway.Handler) {
+	_, mfs := es.match(es.controller, handlers...)
+	es.server.Use(mfs...)
 }
 
-func (gs *echoServer) SetController(controller gateway.Controller) {
-	gs.controller = controller
+func (es *echoServer) SetController(controller gateway.Controller) {
+	es.controller = controller
 }
 
-func (gs *echoServer) GetController() gateway.Controller {
-	return gs.controller
+func (es *echoServer) GetController() gateway.Controller {
+	return es.controller
 }
 
-func (gs *echoServer) NewRouterGroup(path string) gateway.RouterGroupModel {
-	rg := newRouterGroup(gs.server, gs.controller, gs.config, path)
+func (es *echoServer) NewRouterGroup(path string) gateway.RouterGroupModel {
+	rg := newRouterGroup(es.server, es.controller, es.config, path)
 	return rg
 }
 
-func (gs *echoServer) Shutdown(timeout time.Duration) error {
+func (es *echoServer) Shutdown(timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	return gs.server.Shutdown(ctx)
+	return es.server.Shutdown(ctx)
 }
 
-func (gs *echoServer) Run(addr ...string) error {
+func (es *echoServer) Run(addr ...string) error {
 	if addr == nil || len(addr) == 0 {
 		addr = []string{"127.0.0.1:8080"}
 	}
-	err := gs.server.Start(addr[0])
+	err := es.server.Start(addr[0])
 	if err != nil {
 		if err == http.ErrServerClosed {
 			return nil
