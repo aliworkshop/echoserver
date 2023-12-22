@@ -347,3 +347,7 @@ func (r *request) RespondFsFile(file string, filesystem fs.FS) errors.ErrorModel
 	}
 	return nil
 }
+
+func (r *request) RespondHtml(status int, name string, body any) errors.ErrorModel {
+	return errors.HandleError(r.context.Render(status, name, body))
+}
