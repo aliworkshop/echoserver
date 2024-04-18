@@ -21,17 +21,9 @@ import (
 type echoServer struct {
 	router
 	server         *echo.Echo
-	httpServer     http.Server
 	config         config
 	configRegistry configer.Registry
 	controller     gateway.Controller
-}
-
-func (es *echoServer) LoadHtml(path string) {
-	renderer := &TemplateRenderer{
-		templates: template.Must(template.ParseGlob(path)),
-	}
-	es.server.Renderer = renderer
 }
 
 func NewServer(configRegistry configer.Registry) gateway.ServerModel {
@@ -70,6 +62,13 @@ func NewServer(configRegistry configer.Registry) gateway.ServerModel {
 	es.server = s
 
 	return es
+}
+
+func NewTestServer(c gateway.Controller) gateway.ServerModel {
+	return &echoServer{
+		server:     echo.New(),
+		controller: c,
+	}
 }
 
 func (es *echoServer) AddMonitoring(m *gateway.Monitoring) (prometheus.Collector, errors.ErrorModel) {
@@ -114,6 +113,13 @@ func (es *echoServer) GetController() gateway.Controller {
 func (es *echoServer) NewRouterGroup(path string) gateway.RouterGroupModel {
 	rg := newRouterGroup(es.server, es.controller, es.config, path)
 	return rg
+}
+
+func (es *echoServer) LoadHtml(path string) {
+	renderer := &TemplateRenderer{
+		templates: template.Must(template.ParseGlob(path)),
+	}
+	es.server.Renderer = renderer
 }
 
 func (es *echoServer) Shutdown(timeout time.Duration) error {
