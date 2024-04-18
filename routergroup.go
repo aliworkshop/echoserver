@@ -4,6 +4,7 @@ import (
 	"github.com/aliworkshop/gateway/v2"
 	"github.com/labstack/echo/v4"
 	ew "github.com/labstack/echo/v4/middleware"
+	"net/http"
 	"path/filepath"
 )
 
@@ -47,6 +48,10 @@ func (r *routerGroup) DELETE(path string, handlers ...gateway.Handler) {
 
 func (r *routerGroup) STATIC(path string) {
 	r.routerGroup.Use(ew.Static(filepath.Join(path)))
+}
+
+func (r *routerGroup) ServeHttp(w http.ResponseWriter, req *http.Request) {
+	r.engine.ServeHTTP(w, req)
 }
 
 func (r *routerGroup) Group(relativePath string) gateway.RouterGroupModel {
