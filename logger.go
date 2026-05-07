@@ -1,17 +1,18 @@
 package echoserver
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/aliworkshop/gateway/v2"
 	"github.com/aliworkshop/logger"
 	"github.com/labstack/echo/v4"
-	"net/http"
-	"time"
 )
 
 func NewLoggerHandler(l logger.Logger, serverConfig Http) echo.MiddlewareFunc {
-	skipPaths := make(map[string]string, 0)
+	skipPaths := make(map[string]struct{}, len(serverConfig.Logger.SkipPaths))
 	for _, sp := range serverConfig.Logger.SkipPaths {
-		skipPaths[sp] = ""
+		skipPaths[sp] = struct{}{}
 	}
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -19,46 +20,47 @@ func NewLoggerHandler(l logger.Logger, serverConfig Http) echo.MiddlewareFunc {
 			if err := next(c); err != nil {
 				c.Error(err)
 			}
-			_, ok := skipPaths[c.Path()]
-			if !ok || c.Path() == "" {
-				path := c.Request().URL.Path
-				raw := c.Request().URL.RawQuery
-				if raw != "" {
-					path = path + "?" + raw
-				}
-				status := c.Response().Status
+			if _, skip := skipPaths[c.Path()]; skip && c.Path() != "" {
+				return nil
+			}
+			path := c.Request().URL.Path
+			if raw := c.Request().URL.RawQuery; raw != "" {
+				path = path + "?" + raw
+			}
+			status := c.Response().Status
 
-				uid := c.Get("UID")
-				if uid != nil {
-					l = l.WithUid(uid.(string))
-				}
+			line := l
+			if uid := c.Get("UID"); uid != nil {
+				line = line.WithUid(uid.(string))
+			}
+			line = line.WithSource(serverConfig.ServiceName).WithId("echoServer")
 
-				l = l.WithSource(serverConfig.ServiceName).WithId("echoServer")
-				meta := logger.Field{
-					"Path":       path,
-					"Ip":         c.RealIP(),
-					"Elapsed":    time.Since(start).Milliseconds(),
-					"Method":     c.Request().Method,
-					"StatusCode": status,
-					"Mode":       c.Request().Header.Values("X-Mode"),
-				}
-				if req := c.Get("req"); req != nil {
-					requester := req.(gateway.Requester)
-					if userId := requester.GetCurrentAccountId(); userId > 0 {
+			meta := logger.Field{
+				"Path":       path,
+				"Ip":         c.RealIP(),
+				"Elapsed":    time.Since(start).Milliseconds(),
+				"Method":     c.Request().Method,
+				"StatusCode": status,
+				"Mode":       c.Request().Header.Values("X-Mode"),
+			}
+			if rv := c.Get("req"); rv != nil {
+				if req, ok := rv.(gateway.HttpRequester); ok {
+					if userId := req.GetCurrentAccountId(); userId > 0 {
 						meta["UserId"] = userId
 					}
 				}
-				if status < 400 {
-					l.With(meta).DebugF("")
-				} else if status < 500 {
-					if status == http.StatusFailedDependency {
-						l.With(meta).CriticalF("StatusFailedDependency")
-					} else {
-						l.With(meta).InfoF("")
-					}
+			}
+			switch {
+			case status < 400:
+				line.With(meta).DebugF("")
+			case status < 500:
+				if status == http.StatusFailedDependency {
+					line.With(meta).CriticalF("StatusFailedDependency")
 				} else {
-					l.With(meta).CriticalF("")
+					line.With(meta).InfoF("")
 				}
+			default:
+				line.With(meta).CriticalF("")
 			}
 			return nil
 		}

@@ -2,13 +2,6 @@ package echoserver
 
 import (
 	"context"
-	"github.com/aliworkshop/dfilter"
-	errors "github.com/aliworkshop/error"
-	"github.com/aliworkshop/gateway/v2"
-	"github.com/aliworkshop/gateway/v2/authorization"
-	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"io"
 	"io/fs"
 	"log"
@@ -16,42 +9,53 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+
+	ad "github.com/aliworkshop/authorizer/port"
+	"github.com/aliworkshop/dfilter"
+	"github.com/aliworkshop/errors"
+	"github.com/aliworkshop/gateway/v2"
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type request struct {
 	uid               string
+	requestUUID       string
 	context           echo.Context
 	connectionContext context.Context
-	auth              authorization.Authorizer
+	auth              ad.Authorizer
 	body              any
 	filters           map[string][]string
 	language          gateway.Language
 	responded         bool
-	paginator         gateway.Paginator
+	paginator         gateway.IPaginator
+	sorter            gateway.Sorter
 	dFilters          []dfilter.Filter
+	requestScopes     []string
 
-	temp    map[string]interface{}
-	tempMtx *sync.Mutex
+	temp    map[string]any
+	tempMtx sync.Mutex
 }
 
-func NewRequest(ctx echo.Context, languageBundle *i18n.Bundle) gateway.Requester {
-	req := &request{
-		temp:    make(map[string]interface{}),
-		tempMtx: new(sync.Mutex),
+func NewRequest(ctx echo.Context, languageBundle *i18n.Bundle) gateway.HttpRequester {
+	r := &request{
+		temp: make(map[string]any),
 	}
-	req.SetContext(ctx)
+	r.SetContext(ctx)
 	if languageBundle != nil {
 		acceptLanguage := ctx.Request().Header.Get("Accept-Language")
-		req.SetLanguage(gateway.NewLanguage(languageBundle, acceptLanguage))
+		r.SetLanguage(gateway.NewLanguage(languageBundle, acceptLanguage))
 	}
 
 	uid := ctx.Request().Header.Get("X-Request-UID")
 	if uid == "" {
 		uid = uuid.New().String()
 	}
-	req.SetUid(uid)
-	req.connectionContext = context.WithValue(ctx.Request().Context(), "uid", uid)
-	return req
+	r.SetUid(uid)
+	r.requestUUID = uid
+	r.connectionContext = context.WithValue(ctx.Request().Context(), "uid", uid)
+	return r
 }
 
 func (r *request) SetUid(uid string) {
@@ -71,7 +75,15 @@ func (r *request) GetConnectionContext() context.Context {
 	return r.connectionContext
 }
 
-func (r *request) GetContext() interface{} {
+func (r *request) GetContext() any {
+	return r.context
+}
+
+func (r *request) SetContext(i any) {
+	r.context = i.(echo.Context)
+}
+
+func (r *request) GetHttpContext() any {
 	return r.context
 }
 
@@ -99,35 +111,40 @@ func (r *request) Cookie(name string) (string, error) {
 	return cookie.Value, nil
 }
 
-func (r *request) SetCookie(cookie interface{}) {
+func (r *request) SetCookie(cookie any) {
 	http.SetCookie(r.context.Response(), cookie.(*http.Cookie))
 }
 
-func (r *request) SetBody(i interface{}) {
+func (r *request) SetBody(i any) {
 	r.body = i
 }
 
-func (r *request) GetBody() interface{} {
+func (r *request) GetBody() any {
 	return r.body
 }
 
-func (r *request) BindRequest(body interface{}) errors.ErrorModel {
-	err := r.context.Bind(body)
-	if err != nil {
-		return errors.Validation(err)
+func (r *request) BindRequest(body gateway.Validatable) errors.ErrorModel {
+	if err := r.context.Bind(body); err != nil {
+		return errors.Validation(err).WithProperty("error", err.Error())
 	}
-	if err = r.context.Validate(body); err != nil {
-		return errors.Validation(err).WithMessage(err.Error())
-	}
-	r.body = body
-	return nil
+	return body.Validate(getValidator(r.context), r.language)
 }
 
 func (r *request) SetLanguage(language gateway.Language) {
 	r.language = language
 }
 
+func (r *request) GetLanguage() gateway.Language {
+	return r.language
+}
+
 func (r *request) MustLocalize(lc *i18n.LocalizeConfig) string {
+	if r.language == nil {
+		if lc.DefaultMessage != nil {
+			return lc.DefaultMessage.Other
+		}
+		return ""
+	}
 	result, err := r.language.Localize(lc)
 	if err != nil {
 		log.Fatalf("error on localize, err: %v", err)
@@ -136,6 +153,12 @@ func (r *request) MustLocalize(lc *i18n.LocalizeConfig) string {
 }
 
 func (r *request) ShouldLocalize(lc *i18n.LocalizeConfig) string {
+	if r.language == nil {
+		if lc.DefaultMessage != nil {
+			return lc.DefaultMessage.Other
+		}
+		return ""
+	}
 	result, err := r.language.Localize(lc)
 	if err != nil {
 		log.Printf("error on localize, err: %v", err)
@@ -143,12 +166,12 @@ func (r *request) ShouldLocalize(lc *i18n.LocalizeConfig) string {
 	return result
 }
 
-func (r *request) Localize(msgId string, message string, params ...map[string]interface{}) string {
+func (r *request) Localize(msgId string, message string, params ...map[string]any) string {
 	if r.language == nil {
 		return message
 	}
-	var p map[string]interface{}
-	if params != nil && len(params) > 0 {
+	var p map[string]any
+	if len(params) > 0 {
 		p = params[0]
 	}
 	msg, err := r.language.Localize(&i18n.LocalizeConfig{
@@ -164,8 +187,25 @@ func (r *request) Localize(msgId string, message string, params ...map[string]in
 	return msg
 }
 
-func (r *request) SetContext(i interface{}) {
-	r.context = i.(echo.Context)
+func (r *request) Translate(msgId, message string, params ...any) string {
+	if r.language == nil {
+		return message
+	}
+	var p any
+	if len(params) > 0 {
+		p = params[0]
+	}
+	msg, err := r.language.Localize(&i18n.LocalizeConfig{
+		DefaultMessage: &i18n.Message{
+			ID:    msgId,
+			Other: message,
+		},
+		TemplateData: p,
+	})
+	if err != nil {
+		log.Printf("error on localize, err: %v", err)
+	}
+	return msg
 }
 
 func (r *request) GetParam(key string) string {
@@ -174,6 +214,10 @@ func (r *request) GetParam(key string) string {
 
 func (r *request) GetQuery(key string) string {
 	return r.context.QueryParam(key)
+}
+
+func (r *request) FormValue(key string) string {
+	return r.context.FormValue(key)
 }
 
 func (r *request) GetFile(key string) (*multipart.FileHeader, error) {
@@ -188,20 +232,45 @@ func (r *request) GetFiles(key string) ([]*multipart.FileHeader, error) {
 	return form.File[key], nil
 }
 
-func (r *request) Paginator() gateway.Paginator {
+func (r *request) GetAllFiles() (map[string][]*multipart.FileHeader, error) {
+	form, err := r.context.MultipartForm()
+	if err != nil {
+		return nil, err
+	}
+	return form.File, nil
+}
+
+func (r *request) Paginator() gateway.IPaginator {
 	if r.paginator != nil {
 		return r.paginator
 	}
-	p := NewPaginator()
-	page, _ := strconv.Atoi(r.GetQuery("$page"))
-	p.SetPage(page)
-
-	limit, _ := strconv.Atoi(r.GetQuery("$limit"))
-	p.SetLimit(limit)
-
-	p.SetSort(r.GetQuery("$sortby"))
+	p := gateway.NewPaginator()
+	if page, err := strconv.Atoi(r.GetQuery("$page")); err == nil {
+		p.SetPage(int32(page))
+	}
+	if size, err := strconv.Atoi(r.GetQuery("$page_size")); err == nil {
+		p.SetPageSize(int32(size))
+	}
 	r.paginator = p
 	return p
+}
+
+func (r *request) SetPaginator(p gateway.IPaginator) {
+	r.paginator = p
+}
+
+func (r *request) Sorter() gateway.Sorter {
+	if r.sorter != nil {
+		return r.sorter
+	}
+	s := gateway.NewSorter()
+	s.SetSort(r.GetQuery("$sortby"))
+	r.sorter = s
+	return s
+}
+
+func (r *request) SetSorter(s gateway.Sorter) {
+	r.sorter = s
 }
 
 func (r *request) Request() *http.Request {
@@ -216,7 +285,7 @@ func (r *request) IsResponded() bool {
 	return r.responded
 }
 
-func (r *request) SetResponded(responded bool) {
+func (r *request) SetIsResponded(responded bool) {
 	r.responded = responded
 }
 
@@ -246,28 +315,12 @@ func (r *request) Token() (token string) {
 	return r.auth.Token()
 }
 
-func (r *request) SetAuth(auth authorization.Authorizer) {
+func (r *request) SetAuth(auth ad.Authorizer) {
 	r.auth = auth
 }
 
-func (r *request) GetAuth() authorization.Authorizer {
+func (r *request) GetAuth() ad.Authorizer {
 	return r.auth
-}
-
-func (r *request) GetCurrentAccountId() uint64 {
-	auth := r.GetAuth()
-	if auth != nil {
-		return auth.GetCurrentAccountId()
-	}
-	return 0
-}
-
-func (r *request) GetCurrentAccountUuid() string {
-	auth := r.GetAuth()
-	if auth != nil {
-		return auth.GetCurrentAccountUuid()
-	}
-	return ""
 }
 
 func (r *request) IsAuthenticated() bool {
@@ -277,7 +330,35 @@ func (r *request) IsAuthenticated() bool {
 	return r.auth.IsAuthenticated()
 }
 
-func (r *request) GetScopes() []string {
+func (r *request) GetCurrentAccountId() uint64 {
+	if r.auth == nil {
+		return 0
+	}
+	return r.auth.GetCurrentAccountId()
+}
+
+func (r *request) GetCurrentAccountUuid() string {
+	if r.auth == nil {
+		return ""
+	}
+	return r.auth.GetCurrentAccountUuid()
+}
+
+func (r *request) GetCurrentAccountEmail() string {
+	if r.auth == nil || r.auth.GetClaim() == nil {
+		return ""
+	}
+	return r.auth.GetClaim().GetEmail()
+}
+
+func (r *request) GetIssuer() string {
+	if r.auth == nil || r.auth.GetClaim() == nil {
+		return ""
+	}
+	return r.auth.GetClaim().GetIssuer()
+}
+
+func (r *request) GetScopes() map[string]uint16 {
 	if r.auth == nil || !r.auth.IsAuthenticated() {
 		return nil
 	}
@@ -291,17 +372,55 @@ func (r *request) HasScope(scopes ...string) bool {
 	return r.auth.HasScope(scopes...)
 }
 
-func (r *request) SetTemp(key string, value interface{}) {
-	r.tempMtx.Lock()
-	r.temp[key] = value
-	r.tempMtx.Unlock()
+func (r *request) GetRequestScopes() []string {
+	return r.requestScopes
 }
 
-func (r *request) GetTemp(key string) interface{} {
+func (r *request) SetRequestScopes(scopes ...string) {
+	r.requestScopes = scopes
+}
+
+func (r *request) GetRoles() map[string]uint16 {
+	if r.auth == nil || !r.auth.IsAuthenticated() {
+		return nil
+	}
+	return r.auth.GetRoles()
+}
+
+func (r *request) HasRole(roles ...string) bool {
+	if r.auth == nil || !r.auth.IsAuthenticated() {
+		return false
+	}
+	return r.auth.HasRole(roles...)
+}
+
+func (r *request) GetRoleId(role string) uint16 {
+	roles := r.GetRoles()
+	if roles == nil {
+		return 0
+	}
+	return roles[role]
+}
+
+func (r *request) RequestUUID() string {
+	return r.requestUUID
+}
+
+func (r *request) SetRequestUUID(str string) {
+	r.requestUUID = str
+}
+
+func (r *request) SetKey(key string, value any) {
 	r.tempMtx.Lock()
-	temp, _ := r.temp[key]
-	r.tempMtx.Unlock()
-	return temp
+	defer r.tempMtx.Unlock()
+	r.temp[key] = value
+}
+
+func (r *request) GetKey(key string) (value any, exists bool) {
+	r.tempMtx.Lock()
+	defer r.tempMtx.Unlock()
+	v, ok := r.temp[key]
+	return v, ok
 }
 
 func (r *request) GetStatusCode() int {
@@ -317,37 +436,36 @@ func (r *request) Websocket() (gateway.WebSocketHandler, errors.ErrorModel) {
 }
 
 func (r *request) RespondBlob(status gateway.Status, contentType string, body []byte) errors.ErrorModel {
-	err := r.context.Blob(getStatusCode(status), contentType, body)
-	if err != nil {
+	if err := r.context.Blob(getStatusCode(status), contentType, body); err != nil {
 		return errors.HandleError(err)
 	}
 	return nil
 }
 
 func (r *request) RespondStream(status gateway.Status, contentType string, reader io.Reader) errors.ErrorModel {
-	err := r.context.Stream(getStatusCode(status), contentType, reader)
-	if err != nil {
+	if err := r.context.Stream(getStatusCode(status), contentType, reader); err != nil {
 		return errors.HandleError(err)
 	}
 	return nil
 }
 
 func (r *request) RespondFile(file string) errors.ErrorModel {
-	err := r.context.File(file)
-	if err != nil {
+	if err := r.context.File(file); err != nil {
 		return errors.HandleError(err)
 	}
 	return nil
 }
 
 func (r *request) RespondFsFile(file string, filesystem fs.FS) errors.ErrorModel {
-	err := r.context.File(file)
-	if err != nil {
+	if err := r.context.File(file); err != nil {
 		return errors.HandleError(err)
 	}
 	return nil
 }
 
 func (r *request) RespondHtml(status int, name string, body any) errors.ErrorModel {
-	return errors.HandleError(r.context.Render(status, name, body))
+	if err := r.context.Render(status, name, body); err != nil {
+		return errors.HandleError(err)
+	}
+	return nil
 }

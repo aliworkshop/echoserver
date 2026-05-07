@@ -3,8 +3,13 @@ package echoserver
 import (
 	"context"
 	"fmt"
+	"html/template"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/aliworkshop/configer"
-	errors "github.com/aliworkshop/error"
+	"github.com/aliworkshop/errors"
 	"github.com/aliworkshop/gateway/v2"
 	"github.com/aliworkshop/logger"
 	"github.com/go-playground/validator/v10"
@@ -12,10 +17,6 @@ import (
 	"github.com/labstack/echo/v4"
 	ew "github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
-	"html/template"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type echoServer struct {
@@ -24,6 +25,7 @@ type echoServer struct {
 	config         config
 	configRegistry configer.Registry
 	controller     gateway.Controller
+	validator      *validator.Validate
 }
 
 func NewServer(configRegistry configer.Registry) gateway.ServerModel {
@@ -32,12 +34,12 @@ func NewServer(configRegistry configer.Registry) gateway.ServerModel {
 		panic(err)
 	}
 	cfg.Initialize()
+	v := validator.New()
 	es := &echoServer{
-		router: router{
-			config: cfg,
-		},
+		router:         router{config: cfg},
 		config:         cfg,
 		configRegistry: configRegistry,
+		validator:      v,
 	}
 	s := echo.New()
 	if !cfg.Development {
@@ -58,16 +60,22 @@ func NewServer(configRegistry configer.Registry) gateway.ServerModel {
 		AllowMethods: cfg.Cors.AllowMethods,
 		AllowHeaders: cfg.Cors.AllowHeaders,
 	}))
-	s.Validator = &customValidator{validator: validator.New()}
+	s.Validator = &customValidator{validator: v}
 	es.server = s
+	es.server.Use(injectValidator(v))
 
 	return es
 }
 
 func NewTestServer(c gateway.Controller) gateway.ServerModel {
+	v := validator.New()
+	s := echo.New()
+	s.Validator = &customValidator{validator: v}
+	s.Use(injectValidator(v))
 	return &echoServer{
-		server:     echo.New(),
+		server:     s,
 		controller: c,
+		validator:  v,
 	}
 }
 
@@ -81,17 +89,14 @@ func (es *echoServer) AddMonitoring(m *gateway.Monitoring) (prometheus.Collector
 		Buckets:     m.Buckets,
 	}, m.Subsystem)
 	if err := prometheus.Register(metric); err != nil {
-		return nil, errors.New(fmt.Errorf("%s could not be registered in Prometheus: %v", m.Name, err))
+		return nil, errors.Internal(fmt.Errorf("%s could not be registered in Prometheus: %v", m.Name, err))
 	}
 	return metric, nil
 }
 
 func (es *echoServer) StartMonitoring() {
 	p := echop.NewPrometheus("app", func(c echo.Context) bool {
-		if strings.HasSuffix(c.Path(), "monitoring/metrics") {
-			return true
-		}
-		return false
+		return strings.HasSuffix(c.Path(), "monitoring/metrics")
 	})
 	p.MetricsPath = "monitoring/metrics"
 	p.Use(es.server)
@@ -111,8 +116,7 @@ func (es *echoServer) GetController() gateway.Controller {
 }
 
 func (es *echoServer) NewRouterGroup(path string) gateway.RouterGroupModel {
-	rg := newRouterGroup(es.server, es.controller, es.config, path)
-	return rg
+	return newRouterGroup(es.server, es.controller, es.config, path)
 }
 
 func (es *echoServer) LoadHtml(path string) {
@@ -129,14 +133,11 @@ func (es *echoServer) Shutdown(timeout time.Duration) error {
 }
 
 func (es *echoServer) Run(addr ...string) error {
-	if addr == nil || len(addr) == 0 {
+	if len(addr) == 0 {
 		addr = []string{"127.0.0.1:8080"}
 	}
 	err := es.server.Start(addr[0])
-	if err != nil {
-		if err == http.ErrServerClosed {
-			return nil
-		}
+	if err != nil && err != http.ErrServerClosed {
 		return err
 	}
 	return nil
