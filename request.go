@@ -246,10 +246,10 @@ func (r *request) Paginator() gateway.IPaginator {
 	}
 	p := gateway.NewPaginator()
 	if page, err := strconv.Atoi(r.GetQuery("$page")); err == nil {
-		p.SetPage(int32(page))
+		p.SetPage(page)
 	}
 	if size, err := strconv.Atoi(r.GetQuery("$page_size")); err == nil {
-		p.SetPageSize(int32(size))
+		p.SetPageSize(size)
 	}
 	r.paginator = p
 	return p

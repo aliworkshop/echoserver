@@ -133,7 +133,7 @@ func TestServer_DELETE_NoBody_204(t *testing.T) {
 
 func TestServer_PaginationQueryParams(t *testing.T) {
 	rg, _ := newTestRouter(t, "/api")
-	var seenPage, seenSize int32
+	var seenPage, seenSize int
 	rg.READ("/items", handlerFunc(func(req gateway.HttpRequester) (any, errors.ErrorModel) {
 		p := req.Paginator()
 		seenPage = p.GetPage()

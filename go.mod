@@ -8,8 +8,8 @@ require (
 	github.com/aliworkshop/authorizer v1.7.2
 	github.com/aliworkshop/configer v1.2.1
 	github.com/aliworkshop/dfilter v1.3.4
-	github.com/aliworkshop/errors v1.5.3
-	github.com/aliworkshop/gateway/v2 v2.4.4
+	github.com/aliworkshop/errors v1.5.4
+	github.com/aliworkshop/gateway/v2 v2.4.5
 	github.com/aliworkshop/logger v1.5.4
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/google/uuid v1.3.0
@@ -24,7 +24,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
@@ -59,5 +58,3 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
-
-replace github.com/go-playground/validator/v10 => github.com/aliworkshop/validator/v10 v10.26.1
