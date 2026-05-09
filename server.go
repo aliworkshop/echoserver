@@ -107,6 +107,10 @@ func (es *echoServer) Middleware(handlers ...gateway.Handler) {
 	es.server.Use(mfs...)
 }
 
+func (es *echoServer) Validator() *validator.Validate {
+	return es.validator
+}
+
 func (es *echoServer) SetController(controller gateway.Controller) {
 	es.controller = controller
 }
